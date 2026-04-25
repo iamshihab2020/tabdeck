@@ -1,5 +1,8 @@
 # ⚡ TabDeck
 
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/e55fe65b-7a6b-41f1-a3c8-3c949998a132" />
+
+
 **A beautiful, feature-packed new tab page for Chrome.**  
 Every time you open a new tab, TabDeck replaces the default blank page with your own personal productivity dashboard — bookmarks, notes, tasks, weather, and more, all in one place.
 
