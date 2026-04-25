@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "TabDeck",
+  "version": "1.0.0",
+  "description": "A beautiful productivity new tab page by Shihab Hossain & Ahsan Jannat",
+  "chrome_url_overrides": { "newtab": "newtab.html" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16":  "favicon.png",
+      "48":  "favicon.png",
+      "128": "favicon.png"
+    }
+  },
+  "icons": {
+    "16":  "favicon.png",
+    "48":  "favicon.png",
+    "128": "favicon.png"
+  },
+  "permissions": [
+    "tabs",
+    "bookmarks",
+    "history",
+    "downloads",
+    "storage",
+    "topSites",
+    "identity",
+    "identity.email"
+  ],
+  "host_permissions": [
+    "https://wttr.in/*",
+    "https://fonts.googleapis.com/*",
+    "https://fonts.gstatic.com/*",
+    "https://www.googleapis.com/*",
+    "https://motivational-spark-api.vercel.app/*",
+    "https://ipapi.co/*"
+  ]
+}

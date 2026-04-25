@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TabDeck</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --accent:#7c3aed;
+    --accent-light:#a78bfa;
+    --accent-bg:rgba(124,58,237,.16);
+    --accent-glow:rgba(124,58,237,.32);
+    --bg:#0d0f18;
+    --bg-card:#131822;
+    --bg-input:#181d2c;
+    --bg-hover:#1e2336;
+    --bg-active:#232840;
+    --border:#252b3d;
+    --border-hover:#353d58;
+    --text:#e2e5f0;
+    --text-muted:#5a6380;
+    --text-sub:#8891a8;
+    --radius:12px;
+    --radius-sm:8px;
+    --radius-xs:6px;
+  }
+  body{
+    font-family:-apple-system,'Inter','Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);
+    width:340px;font-size:13px;line-height:1.5;
+    overflow:hidden;
+  }
+
+  /* ── Header ── */
+  .header{
+    display:flex;align-items:center;gap:9px;
+    padding:13px 16px 11px;
+    border-bottom:1px solid var(--border);
+  }
+  .header-logo{
+    width:26px;height:26px;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;overflow:hidden;
+  }
+  .header-logo img{width:26px;height:26px;object-fit:contain;border-radius:7px}
+  .header-name{font-weight:800;font-size:14.5px;letter-spacing:-.4px;color:var(--text)}
+  .header-badge{
+    margin-left:auto;font-size:10.5px;font-weight:600;
+    background:var(--bg-input);color:var(--text-sub);
+    padding:2px 9px;border-radius:99px;border:1px solid var(--border);
+  }
+
+  /* ── Page card ── */
+  .page-card{
+    margin:12px 14px 4px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:10px 12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .fav-wrap{
+    width:32px;height:32px;border-radius:8px;
+    background:var(--bg-input);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;overflow:hidden;
+  }
+  .fav-wrap img{width:18px;height:18px}
+  .page-info{min-width:0;flex:1}
+  .page-title-text{
+    font-size:12.5px;font-weight:700;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);
+  }
+  .page-url-text{
+    font-size:10.5px;color:var(--text-muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;
+  }
+
+  /* ── Form ── */
+  .form{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}
+
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field-label{
+    font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--text-muted);padding-left:1px;
+  }
+  input{
+    background:var(--bg-input);border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);
+    font-size:13px;padding:8.5px 11px;outline:none;
+    transition:border-color .15s,box-shadow .15s;width:100%;font-family:inherit;
+  }
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+  input::placeholder{color:var(--text-muted)}
+
+  /* ── Combobox ── */
+  .combo{position:relative}
+  .combo-trigger{
+    width:100%;background:var(--bg-input);border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);
+    font-size:13px;padding:8.5px 11px;outline:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    transition:border-color .15s,box-shadow .15s;font-family:inherit;text-align:left;
+  }
+  .combo-trigger:hover{border-color:var(--border-hover)}
+  .combo-trigger.open{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+  .combo-trigger-val{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .combo-trigger-val.placeholder{color:var(--text-muted)}
+  .combo-chevron{flex-shrink:0;color:var(--text-muted);transition:transform .18s}
+  .combo-trigger.open .combo-chevron{transform:rotate(180deg)}
+
+  .combo-drop{
+    position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:999;
+    background:#1a1f2f;border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);
+    box-shadow:0 8px 32px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.3);
+    overflow:hidden;display:none;
+    animation:dropIn .14s ease;
+  }
+  .combo-drop.open{display:block}
+  @keyframes dropIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+
+  .combo-list{max-height:180px;overflow-y:auto;padding:4px}
+  .combo-list::-webkit-scrollbar{width:4px}
+  .combo-list::-webkit-scrollbar-thumb{background:var(--border-hover);border-radius:99px}
+
+  .combo-item{
+    display:flex;align-items:center;gap:9px;
+    padding:8px 10px;border-radius:var(--radius-xs);cursor:pointer;
+    font-size:13px;color:var(--text-sub);
+    transition:background .1s,color .1s;position:relative;
+  }
+  .combo-item:hover{background:var(--bg-hover);color:var(--text)}
+  .combo-item.selected{color:var(--text);background:var(--bg-active)}
+  .combo-item-check{
+    width:14px;height:14px;flex-shrink:0;margin-left:auto;
+    color:var(--accent-light);opacity:0;
+  }
+  .combo-item.selected .combo-item-check{opacity:1}
+  .combo-item-emoji{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+  .combo-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .combo-empty{padding:12px 10px;text-align:center;color:var(--text-muted);font-size:12px}
+
+  /* ── Destination pills ── */
+  .dest-row{display:flex;gap:7px}
+  .dest-btn{
+    flex:1;padding:8.5px 10px;border-radius:var(--radius-sm);
+    background:var(--bg-input);border:1.5px solid var(--border);
+    color:var(--text-sub);font-size:12px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    transition:all .15s;font-family:inherit;
+  }
+  .dest-btn:hover{border-color:var(--border-hover);color:var(--text)}
+  .dest-btn.active{
+    background:var(--accent-bg);border-color:var(--accent);
+    color:var(--accent-light);box-shadow:0 0 0 2px var(--accent-bg);
+  }
+
+  /* ── Folder row ── */
+  .folder-row{display:flex;gap:7px;align-items:flex-end}
+  .folder-row .field,.folder-row .combo-wrap{flex:1;min-width:0}
+  .new-folder-btn{
+    height:37px;width:37px;flex-shrink:0;
+    background:var(--bg-input);border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text-sub);
+    cursor:pointer;font-size:21px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .15s;
+  }
+  .new-folder-btn:hover{border-color:var(--border-hover);color:var(--text)}
+  .new-folder-btn.active{border-color:var(--accent);color:var(--accent-light)}
+
+  /* ── Divider ── */
+  .divider{height:1px;background:var(--border);margin:1px 0}
+
+  /* ── Save button ── */
+  .save-btn{
+    width:100%;padding:11px;border-radius:var(--radius-sm);
+    background:var(--accent);border:none;color:#fff;
+    font-size:13.5px;font-weight:700;cursor:pointer;letter-spacing:.01em;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:opacity .15s,transform .1s,box-shadow .15s;
+    box-shadow:0 4px 18px var(--accent-glow);font-family:inherit;
+  }
+  .save-btn:hover{opacity:.9;box-shadow:0 6px 24px var(--accent-glow)}
+  .save-btn:active{transform:scale(.98)}
+  .save-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+
+  /* ── Toast ── */
+  .toast{
+    margin:0 14px 12px;padding:9px 12px;border-radius:var(--radius-sm);
+    font-size:12px;font-weight:600;text-align:center;display:none;
+  }
+  .toast.ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
+  .toast.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.28);color:#fca5a5}
+  .toast.show{display:block}
+  .empty{text-align:center;padding:24px 16px;color:var(--text-muted);font-size:12px;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo"><img src="favicon.png" alt=""></div>
+  <span class="header-name">TabDeck</span>
+  <span class="header-badge">Save bookmark</span>
+</div>
+
+<div class="page-card">
+  <div class="fav-wrap" id="pageFavicon">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a6380" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+  </div>
+  <div class="page-info">
+    <div class="page-title-text" id="pageTitle">Loading…</div>
+    <div class="page-url-text" id="pageUrl"></div>
+  </div>
+</div>
+
+<div class="form" id="mainForm">
+  <div class="field">
+    <div class="field-label">Title</div>
+    <input type="text" id="titleInput" placeholder="Page title" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <div class="field-label">Workspace</div>
+    <div class="combo" id="wsCombo">
+      <button class="combo-trigger" id="wsTrigger" type="button">
+        <span class="combo-trigger-val placeholder" id="wsVal">Select workspace…</span>
+        <svg class="combo-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+      </button>
+      <div class="combo-drop" id="wsDrop">
+        <div class="combo-list" id="wsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="field">
+    <div class="field-label">Save to</div>
+    <div class="dest-row">
+      <button class="dest-btn active" id="destQuick" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+        Quick Access
+      </button>
+      <button class="dest-btn" id="destFolder" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Folder
+      </button>
+    </div>
+  </div>
+
+  <div id="folderRow" style="display:none" class="folder-row">
+    <div class="field" style="flex:1;min-width:0">
+      <div class="field-label">Folder</div>
+      <div class="combo" id="folderCombo">
+        <button class="combo-trigger" id="folderTrigger" type="button">
+          <span class="combo-trigger-val placeholder" id="folderVal">Select folder…</span>
+          <svg class="combo-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+        </button>
+        <div class="combo-drop" id="folderDrop">
+          <div class="combo-list" id="folderList"></div>
+        </div>
+      </div>
+    </div>
+    <button class="new-folder-btn" id="newFolderBtn" type="button">+</button>
+  </div>
+
+  <div id="newFolderRow" style="display:none" class="field">
+    <div class="field-label">New folder name</div>
+    <input type="text" id="newFolderInput" placeholder="e.g. Design">
+  </div>
+
+  <button class="save-btn" id="saveBtn" type="button">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+    Save Bookmark
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="popup.js" defer></script>
+</body>
+</html>

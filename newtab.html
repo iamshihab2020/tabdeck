@@ -1,0 +1,968 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabDeck</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-scroll">
+  <div class="logo">
+    <span class="logo-icon">⚡</span>
+    <span class="logo-text">TabDeck</span>
+  </div>
+
+  <nav class="nav">
+    <a href="#" class="nav-item active" data-view="home" data-tip="Home">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span class="nav-label">Home</span>
+    </a>
+    <a href="#" class="nav-item" data-view="bookmarks" data-tip="Bookmarks">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg><span class="nav-label">Bookmarks</span>
+    </a>
+    <a href="#" class="nav-item" data-view="history" data-tip="History">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg><span class="nav-label">History</span>
+    </a>
+    <a href="#" class="nav-item" data-view="downloads" data-tip="Downloads">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="nav-label">Downloads</span>
+    </a>
+    <a href="#" class="nav-item" data-view="notes" data-tip="Notes">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg><span class="nav-label">Notes</span>
+    </a>
+    <a href="#" class="nav-item" data-view="trash" data-tip="Trash">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg><span class="nav-label">Trash</span>
+    </a>
+  </nav>
+
+  <div class="workspaces-section" id="sidebarFoldersSection">
+    <div class="section-header">
+      <span>Folders</span>
+      <button class="icon-btn" id="refreshFoldersBtn" data-tip="Refresh folders">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+      </button>
+    </div>
+    <div class="sidebar-folders-wrap">
+      <div id="sidebarFoldersList" class="sidebar-folders-list">
+        <div style="color:var(--text-muted);font-size:11.5px;padding:4px 9px">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="workspaces-section">
+    <div class="section-header">
+      <span>Workspaces</span>
+      <button class="icon-btn" id="addWorkspaceBtn" data-tip="New Workspace">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+    <div class="sidebar-folders-wrap" id="sidebarWorkspacesWrap">
+      <div id="sidebarWorkspacesList" class="sidebar-folders-list"></div>
+    </div>
+  </div>
+
+  <div class="sync-card" id="syncCard" style="display:none">
+    <div class="sync-icon" id="syncIconEl">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    </div>
+    <div class="sync-text">
+      <strong id="syncTitle">Sync across devices</strong>
+      <p id="syncDesc">Login to back up your data and access it anywhere.</p>
+    </div>
+    <button class="sign-in-btn" id="signInBtn">Sign in</button>
+  </div>
+
+  </div><!-- end .sidebar-scroll -->
+  <div class="sidebar-footer">
+    <button class="footer-btn" id="settingsBtn" data-tip="Settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span class="footer-label">Settings</span>
+    </button>
+    <button class="footer-btn" id="themeBtn" data-tip="Toggle Theme">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="themeIcon"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      <span id="themeLabel">Dark</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="topbar-btn sidebar-toggle-btn" id="sidebarToggleBtn" data-tip="Toggle Sidebar">
+      <svg class="sidebar-toggle-icon-collapse" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><polyline points="5,9 7,12 5,15"/></svg>
+      <svg class="sidebar-toggle-icon-expand" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><polyline points="13,9 11,12 13,15"/></svg>
+    </button>
+    <button class="search-trigger" id="searchTriggerBtn">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span class="search-trigger-text">Search bookmarks, notes…</span>
+      <kbd class="search-kbd">/</kbd>
+    </button>
+    <div class="topbar-actions">
+      <button class="topbar-btn" id="analyticsBtn" data-tip="Analytics">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </button>
+      <button class="topbar-btn" data-tip="Settings" id="topSettingsBtn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/></svg>
+      </button>
+      <button class="topbar-btn" id="gridViewBtn" data-tip="Compact View">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="avatar-btn" id="userAvatarBtn">
+        <div class="avatar" id="userAvatar">A</div>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scrollable content -->
+  <div class="content-wrapper">
+
+    <!-- ===== HOME VIEW ===== -->
+    <div id="view-home" class="view active">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-bg">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 280" preserveAspectRatio="xMidYMid slice" class="mountain-svg">
+            <defs>
+              <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#0d0221"/>
+                <stop offset="20%" stop-color="#1e0845"/>
+                <stop offset="40%" stop-color="#4a0e62"/>
+                <stop offset="55%" stop-color="#8c1f5a"/>
+                <stop offset="68%" stop-color="#c04020"/>
+                <stop offset="78%" stop-color="#e06828"/>
+                <stop offset="86%" stop-color="#c04515"/>
+                <stop offset="93%" stop-color="#701a0a"/>
+                <stop offset="100%" stop-color="#0a0318"/>
+              </linearGradient>
+              <radialGradient id="hGlow" cx="50%" cy="78%" r="45%">
+                <stop offset="0%" stop-color="#ff7a30" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#ff7a30" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <rect width="1440" height="280" fill="url(#skyGrad)"/>
+            <rect width="1440" height="280" fill="url(#hGlow)"/>
+            <circle cx="200" cy="45" r="22" fill="#fffde0" opacity="0.12"/>
+            <circle cx="200" cy="45" r="14" fill="#fffde0" opacity="0.18"/>
+            <circle cx="120" cy="28" r="1" fill="#fff" opacity="0.8"/>
+            <circle cx="260" cy="52" r="1.2" fill="#fff" opacity="0.7"/>
+            <circle cx="420" cy="18" r="0.8" fill="#fff" opacity="0.9"/>
+            <circle cx="600" cy="38" r="1" fill="#fff" opacity="0.6"/>
+            <circle cx="790" cy="24" r="0.8" fill="#fff" opacity="0.8"/>
+            <circle cx="960" cy="48" r="1.2" fill="#fff" opacity="0.5"/>
+            <circle cx="1110" cy="28" r="1" fill="#fff" opacity="0.7"/>
+            <circle cx="1310" cy="42" r="0.9" fill="#fff" opacity="0.8"/>
+            <path d="M0,200 C80,165 130,185 190,168 C250,150 290,172 360,155 C430,138 470,165 540,150 C610,134 660,158 730,143 C800,128 850,152 920,138 C990,124 1040,148 1110,135 C1180,122 1230,144 1310,132 C1370,122 1410,140 1440,132 L1440,280 L0,280 Z" fill="#1c0940" opacity="0.85"/>
+            <path d="M0,225 C60,200 105,216 155,200 C205,182 248,206 308,190 C368,174 408,200 478,184 C548,168 588,194 658,178 C728,162 768,188 838,173 C908,158 948,182 1018,167 C1088,152 1128,178 1198,163 C1268,148 1318,172 1388,158 L1440,153 L1440,280 L0,280 Z" fill="#120628" opacity="0.92"/>
+            <path d="M0,250 C70,225 115,242 175,226 C235,210 268,234 335,218 C402,202 448,226 518,210 C588,194 628,220 698,205 C768,190 808,216 878,200 C948,184 988,210 1058,195 C1128,180 1168,206 1238,192 C1308,178 1368,200 1440,188 L1440,280 L0,280 Z" fill="#0a0520"/>
+            <path d="M0,268 L1440,268 L1440,280 L0,280 Z" fill="#080318"/>
+          </svg>
+        </div>
+        <div class="hero-content">
+          <div class="greeting" id="greetingText">Good evening, Ahsan 👋</div>
+          <div class="clock-container">
+            <span class="clock" id="clockDisplay">00:00</span>
+            <span class="clock-ampm" id="clockAmPm">AM</span>
+          </div>
+          <div class="date-display" id="dateDisplay">Loading...</div>
+        </div>
+        <div class="weather-widget" id="weatherWidget" data-tip="Click to change location">
+          <div class="weather-inner">
+            <span class="weather-icon" id="weatherIcon">⛅</span>
+            <div class="weather-info">
+              <span class="weather-temp" id="weatherTemp">--°C</span>
+              <span class="weather-desc" id="weatherDesc"></span>
+              <div class="weather-location">
+                <span id="weatherCity">Detecting...</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Workspace Tabs -->
+      <div class="workspace-tabs-bar">
+        <div class="workspace-tabs" id="workspaceTabs"></div>
+        <div class="ws-tabs-divider"></div>
+        <button class="new-workspace-tab" id="newWorkspaceTabBtn" data-tip="New Workspace">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New
+        </button>
+        <button class="manage-workspaces-btn" id="manageWorkspacesBtn" data-tip="Manage Workspaces">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Manage
+        </button>
+      </div>
+
+      <!-- Home Body -->
+      <div class="home-content">
+
+        <!-- Workspace Bookmarks -->
+        <section class="section" id="wsBmSection" style="display:none">
+          <div class="section-title-row">
+            <h2 class="section-title">Bookmarks</h2>
+            <button class="edit-btn" id="addWsBmBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add
+            </button>
+          </div>
+          <div id="wsBmGrid"></div>
+        </section>
+
+        <!-- Quick Access -->
+        <section class="section">
+          <div class="section-title-row">
+            <h2 class="section-title">Quick Access</h2>
+            <button class="edit-btn" id="editQuickAccessBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit
+            </button>
+          </div>
+          <div class="quick-access-grid" id="quickAccessGrid"></div>
+        </section>
+
+        <!-- Widgets -->
+        <div class="widgets-row" id="widgetsRow">
+
+          <div class="widget notes-widget" id="widget-notes">
+            <div class="widget-top-row">
+              <span class="widget-label">Notes</span>
+              <button class="widget-action-btn" id="addNoteBtn" data-tip="New note">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+            <div class="notes-list" id="notesList"></div>
+          </div>
+
+          <div class="widget tasks-widget" id="widget-tasks">
+            <div class="widget-top-row">
+              <span class="widget-label">Today's Tasks</span>
+              <div class="widget-top-actions">
+                <span class="tasks-progress-chip" id="tasksProgressChip"></span>
+                <button class="widget-action-btn" id="addTaskBtn" data-tip="Add task">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="tasks-list" id="tasksList"></div>
+          </div>
+
+          <div class="widget quote-widget" id="widget-quote">
+            <div class="quote-header">
+              <div class="quote-mark">"</div>
+              <button class="quote-refresh-icon" id="refreshQuoteBtn" data-tip="New quote">↻</button>
+            </div>
+            <p class="quote-text" id="quoteText">Loading…</p>
+            <div class="quote-author-row">
+              <span class="quote-author" id="quoteAuthor">—</span>
+            </div>
+          </div>
+
+          <div class="widget timer-widget" id="widget-timer">
+            <div class="widget-top-row">
+              <span class="widget-label">Focus Timer</span>
+              <div class="timer-presets">
+                <button class="preset-btn active" data-min="25">25m</button>
+                <button class="preset-btn" data-min="15">15m</button>
+                <button class="preset-btn" data-min="5">5m</button>
+              </div>
+            </div>
+            <div class="timer-body">
+              <div class="timer-circle-wrap">
+                <svg class="timer-svg" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="var(--border)" stroke-width="6"/>
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#7c3aed" stroke-width="6"
+                    stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="0"
+                    id="timerProgress" transform="rotate(-90,50,50)"/>
+                </svg>
+                <div class="timer-display"><span id="timerDisplay">25:00</span></div>
+              </div>
+              <div class="timer-controls">
+                <button class="timer-btn timer-reset-btn" id="timerResetBtn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                </button>
+                <button class="timer-btn timer-play-btn" id="timerPlayBtn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /view-home -->
+
+    <!-- ===== BOOKMARKS VIEW ===== -->
+    <div id="view-bookmarks" class="view">
+      <div class="view-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="an-back-btn view-back-btn" data-tip="Back to Home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <h1>Bookmarks</h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="bookmarkSearch" class="view-search" placeholder="Search bookmarks...">
+          <button class="btn-secondary" id="addBookmarkBtn" style="white-space:nowrap;font-size:13px;padding:7px 13px">+ Bookmark</button>
+          <button class="btn-secondary" id="addFolderBtn" style="white-space:nowrap;font-size:13px;padding:7px 13px">+ Folder</button>
+        </div>
+      </div>
+      <!-- Workspace switcher tabs -->
+      <div class="bm-ws-tabs" id="bmWsTabs"></div>
+      <!-- Bookmark toolbar: folder filters + sort -->
+      <div class="bm-toolbar" id="bmToolbar">
+        <div class="bm-folder-filters" id="bmFolderFilters"></div>
+        <div class="bm-sort-group">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);flex-shrink:0"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+          <select id="bmSortSelect" class="bm-sort-select">
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="most">Most visited</option>
+          </select>
+        </div>
+      </div>
+      <div class="view-loading" id="bookmarksLoading" style="display:none">
+        <div class="spinner"></div><span>Loading bookmarks...</span>
+      </div>
+      <div id="allBookmarksList" class="bookmarks-list-full"></div>
+    </div>
+
+    <!-- ===== HISTORY VIEW ===== -->
+    <div id="view-history" class="view">
+      <div class="view-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="an-back-btn view-back-btn" data-tip="Back to Home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <h1>History</h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="historySearch" class="view-search" placeholder="Search history...">
+          <button class="history-clear-all-btn" id="historyClearAllBtn">Clear All</button>
+        </div>
+      </div>
+      <div class="view-loading" id="historyLoading">
+        <div class="spinner"></div><span>Loading history...</span>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </div>
+
+    <!-- ===== DOWNLOADS VIEW ===== -->
+    <div id="view-downloads" class="view">
+      <div class="view-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="an-back-btn view-back-btn" data-tip="Back to Home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <h1>Downloads</h1>
+        </div>
+      </div>
+      <div class="view-loading" id="downloadsLoading">
+        <div class="spinner"></div><span>Loading downloads...</span>
+      </div>
+      <div id="downloadsList" class="downloads-list"></div>
+    </div>
+
+    <!-- ===== NOTES VIEW ===== -->
+    <div id="view-notes" class="view">
+      <div class="view-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="an-back-btn view-back-btn" data-tip="Back to Home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <h1>Notes</h1>
+        </div>
+        <button class="btn-primary" id="addNoteViewBtn">+ New Note</button>
+      </div>
+      <div class="notes-view-toolbar">
+        <div class="notes-search-wrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="notesViewSearch" class="notes-view-search" placeholder="Search notes…">
+        </div>
+        <div class="notes-tag-filters" id="notesTagFilters"></div>
+      </div>
+      <div id="notesViewList" class="notes-view-list"></div>
+    </div>
+
+    <!-- ===== TRASH VIEW ===== -->
+    <div id="view-trash" class="view">
+      <div class="view-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="an-back-btn view-back-btn" data-tip="Back to Home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <h1>Trash</h1>
+        </div>
+        <button class="btn-danger" id="emptyTrashBtn">Empty Trash</button>
+      </div>
+      <div id="trashList" class="trash-list"></div>
+    </div>
+
+    <!-- ===== ANALYTICS VIEW ===== -->
+    <div id="view-analytics" class="view">
+      <div class="view-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="an-back-btn view-back-btn" id="analyticsBackBtn" data-tip="Back to Home">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+          </button>
+          <h1>Analytics</h1>
+        </div>
+      </div>
+      <div id="analyticsContent" class="an-grid"></div>
+    </div>
+
+  </div><!-- /content-wrapper -->
+</main>
+
+<!-- ===== SETTINGS PANEL ===== -->
+<div class="settings-overlay" id="settingsOverlay"></div>
+<aside class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <h2>Settings</h2>
+    <button class="modal-close" id="closeSettingsBtn">✕</button>
+  </div>
+  <div class="settings-body">
+
+    <div class="settings-section">
+      <button class="settings-chrome-import-btn" id="importChromeBookmarksBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none"/><circle cx="12" cy="12" r="4" fill="currentColor" opacity=".3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="2.5"/></svg>
+        Import Chrome Bookmarks
+        <span class="settings-chrome-import-sub">Creates a new workspace with all your bookmarks</span>
+      </button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Profile</div>
+      <div class="settings-row">
+        <div class="settings-label">
+          <span>Display Name</span>
+          <small>Shown in greeting</small>
+        </div>
+        <input type="text" id="settingsName" class="settings-input" placeholder="Your name">
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">
+          <span>Avatar Color</span>
+        </div>
+        <div class="color-swatches" id="avatarColors">
+          <div class="color-swatch active" data-color="#7c3aed" style="background:#7c3aed"></div>
+          <div class="color-swatch" data-color="#2563eb" style="background:#2563eb"></div>
+          <div class="color-swatch" data-color="#059669" style="background:#059669"></div>
+          <div class="color-swatch" data-color="#d97706" style="background:#d97706"></div>
+          <div class="color-swatch" data-color="#dc2626" style="background:#dc2626"></div>
+          <div class="color-swatch" data-color="#db2777" style="background:#db2777"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Appearance</div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Theme</span></div>
+        <div class="toggle-group">
+          <button class="toggle-opt active" data-theme="dark" id="darkThemeBtn">🌙 Dark</button>
+          <button class="toggle-opt" data-theme="light" id="lightThemeBtn">☀️ Light</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">
+          <span>Accent Color</span>
+        </div>
+        <div class="color-swatches" id="accentColors">
+          <div class="color-swatch active" data-color="#7c3aed" style="background:#7c3aed"></div>
+          <div class="color-swatch" data-color="#2563eb" style="background:#2563eb"></div>
+          <div class="color-swatch" data-color="#059669" style="background:#059669"></div>
+          <div class="color-swatch" data-color="#d97706" style="background:#d97706"></div>
+          <div class="color-swatch" data-color="#dc2626" style="background:#dc2626"></div>
+          <div class="color-swatch" data-color="#db2777" style="background:#db2777"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Clock & Date</div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Clock Format</span></div>
+        <div class="toggle-group">
+          <button class="toggle-opt active" data-format="12" id="clock12Btn">12h</button>
+          <button class="toggle-opt" data-format="24" id="clock24Btn">24h</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Show Seconds</span></div>
+        <label class="switch">
+          <input type="checkbox" id="showSecondsToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Card Hover Effect</div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Glow Animation</span><span class="settings-sub-label" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px">Cards, folders &amp; quick access</span></div>
+        <div class="toggle-group" id="cardGlowGroup">
+          <button class="toggle-opt" data-glow="off">Off</button>
+          <button class="toggle-opt active" data-glow="glow">Glow</button>
+          <button class="toggle-opt" data-glow="neon">Neon</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Widgets</div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Notes Widget</span></div>
+        <label class="switch"><input type="checkbox" id="widgetNotesToggle" checked><span class="slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Tasks Widget</span></div>
+        <label class="switch"><input type="checkbox" id="widgetTasksToggle" checked><span class="slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Quote Widget</span></div>
+        <label class="switch"><input type="checkbox" id="widgetQuoteToggle" checked><span class="slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label"><span>Focus Timer Widget</span></div>
+        <label class="switch"><input type="checkbox" id="widgetTimerToggle" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Data Management</div>
+      <div class="settings-row-block">
+        <div class="settings-sub-label">Export / Import</div>
+        <button class="settings-action-btn" id="exportDataBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export All Data
+        </button>
+        <button class="settings-action-btn" id="importDataBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import Data
+        </button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none">
+        <div class="settings-sub-label" style="margin-top:8px">Clear Specific Data</div>
+        <button class="settings-action-btn danger-soft" id="clearNotesBtn">
+          <span style="font-size:14px">📝</span> Clear All Notes (current workspace)
+        </button>
+        <button class="settings-action-btn danger-soft" id="clearTasksBtn">
+          <span style="font-size:14px">✅</span> Clear All Tasks (current workspace)
+        </button>
+        <button class="settings-action-btn danger-soft" id="clearQuickAccessBtn">
+          <span style="font-size:14px">⚡</span> Clear Quick Access (current workspace)
+        </button>
+        <button class="settings-action-btn danger-soft" id="clearTrashBtn">
+          <span style="font-size:14px">🗑️</span> Empty Trash
+        </button>
+        <div class="settings-sub-label" style="margin-top:8px">Nuclear Option</div>
+        <button class="settings-action-btn danger" id="clearAllDataBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          Clear ALL Data (cannot be undone)
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">About</div>
+      <div class="settings-about">
+        <div class="about-logo">⚡</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">TabDeck</div>
+          <div style="color:var(--text-muted);font-size:12px">Version 2.1.0</div>
+          <div style="color:var(--text-muted);font-size:12px;margin-top:4px">Your beautiful new tab page</div>
+        </div>
+      </div>
+      <div class="owner-credit">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        Created by <a class="credit-link" href="https://www.linkedin.com/in/sheikh-shihab-hossain/" target="_blank" rel="noopener">Shihab Hossain</a> &amp; <a class="credit-link" href="https://www.linkedin.com/in/ahsan-jannat/" target="_blank" rel="noopener">Ahsan Jannat</a>
+      </div>
+    </div>
+
+    <div style="padding:0 0 20px">
+      <button class="btn-primary" id="saveSettingsBtn" style="width:100%">Save Settings</button>
+    </div>
+  </div>
+</aside>
+
+<!-- Command Palette -->
+<div id="cmdPaletteOverlay">
+  <div id="cmdPalette">
+    <div class="cmd-search-row">
+      <svg class="cmd-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="cmdInput" class="cmd-input" placeholder="Search bookmarks, notes…" autocomplete="off" spellcheck="false">
+      <kbd class="cmd-esc-badge">ESC</kbd>
+    </div>
+    <div class="cmd-results" id="cmdResults"></div>
+    <div class="cmd-footer">
+      <span class="cmd-hint"><kbd>↑↓</kbd> navigate</span>
+      <span class="cmd-hint"><kbd>↵</kbd> open</span>
+      <span class="cmd-hint"><kbd>ESC</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" data-tip="Quick Add">
+  <svg class="fab-icon-plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  <svg class="fab-icon-close" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+</button>
+<div class="fab-menu" id="fabMenu">
+  <button class="fab-menu-item" id="fabAddNote">
+    <span class="fab-item-icon fab-item-icon--note">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    </span>
+    <span class="fab-item-label">New Note</span>
+  </button>
+  <button class="fab-menu-item" id="fabAddTask">
+    <span class="fab-item-icon fab-item-icon--task">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    </span>
+    <span class="fab-item-label">New Task</span>
+  </button>
+  <button class="fab-menu-item" id="fabAddQuickAccess">
+    <span class="fab-item-icon fab-item-icon--link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+    </span>
+    <span class="fab-item-label">Quick Access</span>
+  </button>
+  <button class="fab-menu-item" id="fabAddBookmark">
+    <span class="fab-item-icon fab-item-icon--bookmark">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+    </span>
+    <span class="fab-item-label">Add Bookmark</span>
+  </button>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Workspace Modal -->
+<div class="modal-overlay" id="workspaceModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="workspaceModalTitle">New Workspace</h3>
+      <button class="modal-close" data-modal="workspaceModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Name</label>
+      <input type="text" id="workspaceName" placeholder="e.g. Personal, Work..." class="modal-input">
+      <label>Icon</label>
+      <div class="emoji-picker" id="emojiPicker">
+        <span data-emoji="🏠">🏠</span><span data-emoji="💼">💼</span>
+        <span data-emoji="📚">📚</span><span data-emoji="🗂️">🗂️</span>
+        <span data-emoji="💡">💡</span><span data-emoji="🎮">🎮</span>
+        <span data-emoji="🎨">🎨</span><span data-emoji="🔬">🔬</span>
+        <span data-emoji="🚀">🚀</span><span data-emoji="💰">💰</span>
+        <span data-emoji="🌍">🌍</span><span data-emoji="🎵">🎵</span>
+      </div>
+      <input type="hidden" id="selectedEmoji" value="🏠">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="workspaceModal">Cancel</button>
+      <button class="btn-primary" id="saveWorkspaceBtn">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal note-editor-modal">
+    <div class="note-editor-topbar">
+      <button class="note-pin-btn" id="notePinBtn" data-tip="Pin note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24V17z"/></svg>
+        <span id="notePinLabel">Pin</span>
+      </button>
+      <span class="note-editor-mode-label" id="noteModalTitle">New Note</span>
+      <button class="modal-close" data-modal="noteModal">✕</button>
+    </div>
+    <div class="note-editor-body">
+      <input type="text" id="noteTitle" placeholder="Untitled" class="note-editor-title-input" autocomplete="off">
+      <textarea id="noteContent" placeholder="Start writing…" class="note-editor-content"></textarea>
+    </div>
+    <div class="note-editor-footer">
+      <div class="note-tags-row">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="note-tags-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <div class="note-tags-list" id="noteTagsList"></div>
+        <input type="text" id="noteTagInput" class="note-tag-input" placeholder="Add tag…" maxlength="20">
+      </div>
+      <div class="note-editor-bottom">
+        <span class="note-word-count" id="noteWordCount">0 words</span>
+        <div class="note-editor-actions">
+          <button class="btn-danger-sm" id="deleteNoteBtn" style="display:none">🗑 Delete</button>
+          <button class="btn-secondary" data-modal="noteModal">Cancel</button>
+          <button class="btn-primary" id="saveNoteBtn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Add Modal -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Task</h3>
+      <button class="modal-close" data-modal="taskModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="taskInput" placeholder="What do you need to do?" class="modal-input">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="taskModal">Cancel</button>
+      <button class="btn-primary" id="saveTaskBtn">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Access Modal -->
+<div class="modal-overlay" id="quickAccessModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Quick Access</h3>
+      <button class="modal-close" data-modal="quickAccessModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Name</label>
+      <input type="text" id="qaName" placeholder="e.g. Gmail" class="modal-input">
+      <label>URL</label>
+      <input type="url" id="qaUrl" placeholder="https://gmail.com" class="modal-input">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="quickAccessModal">Cancel</button>
+      <button class="btn-primary" id="saveQuickAccessBtn">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Your Profile</h3>
+      <button class="modal-close" data-modal="profileModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="profileGoogleInfo" style="display:none" class="google-profile-info"></div>
+      <label>Display Name</label>
+      <input type="text" id="profileName" placeholder="Your name" class="modal-input">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="profileModal">Cancel</button>
+      <button class="btn-primary" id="saveProfileBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Folder Detail Modal -->
+<div class="modal-overlay" id="folderModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="folderModalIcon" style="font-size:20px">📁</span>
+        <h3 id="folderModalTitle">Folder</h3>
+        <span id="folderModalCount" style="font-size:12px;color:var(--text-muted)"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div id="folderModalActions" style="display:flex;gap:4px"></div>
+        <button class="modal-close" data-modal="folderModal">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:12px 16px;max-height:520px;overflow-y:auto">
+      <div id="folderModalItems" class="folder-modal-items"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3 id="confirmTitle">Confirm</h3>
+      <button class="modal-close" data-modal="confirmModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage" style="color:var(--text-secondary);font-size:14px;line-height:1.6"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="confirmModal">Cancel</button>
+      <button class="btn-danger" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Weather Location Modal -->
+<div class="modal-overlay" id="weatherLocationModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3>📍 Set Weather Location</h3>
+      <button class="modal-close" data-modal="weatherLocationModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>City Name</label>
+      <div style="display:flex;gap:7px">
+        <input type="text" id="weatherLocationInput" placeholder="e.g. Dhaka, London, New York..." class="modal-input" style="flex:1">
+        <button class="btn-primary" id="detectLocationBtn" data-tip="Detect my location" style="flex-shrink:0;padding:8px 12px">📡</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-muted)">Click 📡 to detect automatically via GPS.</div>
+      <div id="weatherLocationStatus" style="font-size:12px;color:var(--accent-light);min-height:16px;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn-secondary" id="reDetectWeatherBtn" style="font-size:12px">↺ Re-detect</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" data-modal="weatherLocationModal">Cancel</button>
+        <button class="btn-primary" id="saveWeatherLocationBtn">Set Location</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bookmark Add/Edit Modal -->
+<div class="modal-overlay" id="bookmarkEditModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="bookmarkEditModalTitle">Add Bookmark</h3>
+      <button class="modal-close" data-modal="bookmarkEditModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Title</label>
+      <input type="text" id="bmEditName" placeholder="Bookmark title" class="modal-input">
+      <label>URL</label>
+      <input type="url" id="bmEditUrl" placeholder="https://example.com" class="modal-input">
+      <label>Folder</label>
+      <select id="bmEditFolder" class="modal-input modal-select"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger-sm" id="bmEditDeleteBtn" style="display:none;margin-right:auto">🗑 Delete</button>
+      <button class="btn-secondary" data-modal="bookmarkEditModal">Cancel</button>
+      <button class="btn-primary" id="bmEditSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Folder Add/Edit Modal -->
+<div class="modal-overlay" id="folderEditModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="folderEditModalTitle">New Folder</h3>
+      <button class="modal-close" data-modal="folderEditModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Folder Name</label>
+      <input type="text" id="folderEditName" placeholder="e.g. Work, Design, Dev..." class="modal-input">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="folderEditModal">Cancel</button>
+      <button class="btn-primary" id="folderEditSaveBtn">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Workspace Bookmark Chooser -->
+<div class="modal-overlay" id="wsBmChooserModal">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-header">
+      <h3>Add to Workspace</h3>
+      <button class="modal-close" data-modal="wsBmChooserModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="ws-bm-chooser-grid">
+        <button class="ws-bm-chooser-tile" id="chooserFolderBtn">
+          <div class="qa-add-icon" style="font-size:20px">📁</div>
+          <span>New Folder</span>
+        </button>
+        <button class="ws-bm-chooser-tile" id="chooserBookmarkBtn">
+          <div class="qa-add-icon" style="font-size:20px">🔖</div>
+          <span>New Bookmark</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Workspace Folder Create/Edit Modal -->
+<div class="modal-overlay" id="wsFolderEditModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3 id="wsFolderEditTitle">New Folder</h3>
+      <button class="modal-close" data-modal="wsFolderEditModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Folder Name</label>
+      <input type="text" id="wsFolderEditNameInput" placeholder="e.g. Work, Design, Dev..." class="modal-input">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="wsFolderEditModal">Cancel</button>
+      <button class="btn-primary" id="wsFolderEditSaveBtn">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Workspace Bookmark Add/Edit Modal -->
+<div class="modal-overlay" id="wsBookmarkEditModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 id="wsBookmarkEditTitle">Add Bookmark</h3>
+      <button class="modal-close" data-modal="wsBookmarkEditModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Title</label>
+      <input type="text" id="wsBmEditTitle" placeholder="e.g. Google" class="modal-input">
+      <label>URL</label>
+      <input type="url" id="wsBmEditUrl" placeholder="https://google.com" class="modal-input">
+      <label>Folder</label>
+      <div class="csel-wrap" id="wsBmFolderWrap">
+        <button type="button" class="csel-btn" id="wsBmFolderBtn">
+          <span id="wsBmFolderLabel">Select folder...</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+        </button>
+        <div class="csel-dropdown" id="wsBmFolderDropdown"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger-sm" id="wsBmEditDeleteBtn" style="display:none;margin-right:auto">🗑 Delete</button>
+      <button class="btn-secondary" data-modal="wsBookmarkEditModal">Cancel</button>
+      <button class="btn-primary" id="wsBmEditSaveBtn">Add Bookmark</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Workspaces Modal -->
+<div class="modal-overlay" id="manageWorkspacesModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Manage Workspaces</h3>
+      <button class="modal-close" data-modal="manageWorkspacesModal">✕</button>
+    </div>
+    <div class="modal-body" style="padding:8px 12px">
+      <div id="manageWsList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" id="manageWsAddBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Workspace
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- QA Replace Modal -->
+<div class="modal-overlay" id="qaReplaceModal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <h3>Quick Access Full</h3>
+      <button class="modal-close" data-modal="qaReplaceModal">✕</button>
+    </div>
+    <div class="modal-body" style="gap:6px">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">Select an item to replace with <strong id="qaReplaceNewName"></strong>:</p>
+      <div id="qaReplaceList" style="display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" data-modal="qaReplaceModal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
