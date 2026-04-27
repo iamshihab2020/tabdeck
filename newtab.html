@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-pack="default">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,50;1,9..144,300..600,50&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="js/fouc.js"></script>
+  <link id="theme-pack-css" rel="stylesheet" href="css/themes/default.css">
 </head>
 <body>
 
@@ -451,6 +454,36 @@
           <div class="color-swatch" data-color="#d97706" style="background:#d97706"></div>
           <div class="color-swatch" data-color="#dc2626" style="background:#dc2626"></div>
           <div class="color-swatch" data-color="#db2777" style="background:#db2777"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Theme Pack</div>
+      <div class="settings-row-block">
+        <div class="settings-sub-label">Choose a complete visual style</div>
+        <div class="pack-picker" id="packPicker">
+          <button class="pack-card active" data-pack="default">
+            <span class="pack-swatch pack-swatch-default"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Default</span>
+              <span class="pack-desc">Dark glass · purple accent · soft</span>
+            </span>
+          </button>
+          <button class="pack-card" data-pack="brutal">
+            <span class="pack-swatch pack-swatch-brutal"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Brutal</span>
+              <span class="pack-desc">Sharp · mustard + black · bold</span>
+            </span>
+          </button>
+          <button class="pack-card" data-pack="atelier">
+            <span class="pack-swatch pack-swatch-atelier"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Atelier</span>
+              <span class="pack-desc">Editorial · ivory + oxblood · serif</span>
+            </span>
+          </button>
         </div>
       </div>
     </div>

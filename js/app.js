@@ -337,6 +337,7 @@ let S = {
   wsData:        {},   // {[wsId]: {quickAccess,notes,tasks}}
   trash:         [],
   settings: {
+    pack:        'default',
     theme:       'dark',
     accentColor: '#7c3aed',
     clockFormat: '12',
@@ -423,6 +424,7 @@ async function loadState() {
     migrated = true;
   }
   if (migrated) save();
+  applyPack(S.settings.pack || 'default');
   applyAccent(S.settings.accentColor);
   applyTheme(S.settings.theme);
   applyCardGlow(S.settings.cardGlow || 'glow');
@@ -3126,12 +3128,36 @@ function applyTheme(theme) {
 function applyAccent(color) {
   if (!color) return;
   S.settings.accentColor = color;
+  // Brutal pack uses a fixed palette; ignore arbitrary hex tweaks.
+  const _pk = S.settings.pack || 'default';
+  if (_pk === 'brutal' || _pk === 'atelier') {
+    ['--accent','--accent-light','--accent-bg','--accent-subtle','--accent-glow']
+      .forEach(p => document.documentElement.style.removeProperty(p));
+    try { localStorage.setItem('__td_accent', color); } catch(e) {}
+    return;
+  }
   document.documentElement.style.setProperty('--accent', color);
   document.documentElement.style.setProperty('--accent-light', color+'cc');
   document.documentElement.style.setProperty('--accent-bg', color+'2e');
   document.documentElement.style.setProperty('--accent-subtle', color+'14');
   document.documentElement.style.setProperty('--accent-glow',   color+'80');
   try { localStorage.setItem('__td_accent', color); } catch(e) {}
+}
+function applyPack(pack) {
+  if (pack !== 'brutal' && pack !== 'atelier') pack = 'default';
+  S.settings.pack = pack;
+  document.documentElement.dataset.pack = pack;
+  const link = document.getElementById('theme-pack-css');
+  const href = 'css/themes/' + pack + '.css';
+  if (link && link.getAttribute('href') !== href) link.setAttribute('href', href);
+  try { localStorage.setItem('__td_pack', pack); } catch(e) {}
+  // Re-apply mode + accent so the new pack inherits current state.
+  applyTheme(S.settings.theme || 'dark');
+  applyAccent(S.settings.accentColor || '#7c3aed');
+  // Update picker UI active state.
+  document.querySelectorAll('#packPicker .pack-card').forEach(b => {
+    b.classList.toggle('active', b.dataset.pack === pack);
+  });
 }
 function applyCardGlow(mode) {
   document.documentElement.dataset.cardGlow = mode || 'glow';
@@ -3568,6 +3594,14 @@ function setupEventListeners() {
   el('settingsOverlay').addEventListener('click', closeSettings);
   el('saveSettingsBtn').addEventListener('click', saveSettings);
 
+  // Theme pack picker
+  document.querySelectorAll('#packPicker .pack-card').forEach(b => {
+    b.addEventListener('click', () => {
+      applyPack(b.dataset.pack);
+      save();
+    });
+  });
+
   // Settings theme toggles
   el('darkThemeBtn').addEventListener('click', () => {
     applyTheme('dark');
@@ -3688,9 +3722,10 @@ function setupEventListeners() {
       S.weatherLocation = null;
       S.workspaces.forEach(ws => S.wsData[ws.id] = DEFAULT_WS_DATA(ws.id));
       S.trash = [];
-      S.settings = { theme:'dark', accentColor:'#7c3aed', clockFormat:'12', showSeconds:true, cardGlow:'glow', widgets:{notes:true,tasks:true,quote:true,timer:true} };
+      S.settings = { pack:'default', theme:'dark', accentColor:'#7c3aed', clockFormat:'12', showSeconds:true, cardGlow:'glow', widgets:{notes:true,tasks:true,quote:true,timer:true} };
       save();
       renderAll();
+      applyPack('default');
       applyTheme('dark');
       applyAccent('#7c3aed');
       applyCardGlow('glow');
