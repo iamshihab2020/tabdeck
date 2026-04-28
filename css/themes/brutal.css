@@ -487,6 +487,8 @@ html[data-pack="brutal"][data-theme="dark"] {
 .pack-swatch-default{background:linear-gradient(135deg,#0e1117 0%,#0e1117 50%,#7c3aed 50%,#7c3aed 100%)}
 .pack-swatch-brutal{background:linear-gradient(135deg,#fef9c3 0%,#fef9c3 50%,#0a0a0a 50%,#0a0a0a 100%)}
 .pack-swatch-atelier{background:linear-gradient(135deg,#f4ede1 0%,#f4ede1 50%,#7a2222 50%,#7a2222 100%)}
+.pack-swatch-holodeck{background:linear-gradient(135deg,#050810 0%,#050810 50%,#00e5ff 50%,#00e5ff 100%)}
+.pack-swatch-mono{background:linear-gradient(135deg,#fafaf8 0%,#fafaf8 50%,#3d6b4f 50%,#3d6b4f 100%)}
 .pack-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pack-name{font-weight:700;font-size:13px}
 .pack-desc{font-size:11px;color:var(--text-muted)}

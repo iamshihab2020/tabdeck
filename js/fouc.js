@@ -1,6 +1,6 @@
 try {
   var p = localStorage.getItem('__td_pack') || 'default';
-  if (p !== 'brutal' && p !== 'atelier') p = 'default';
+  if (p !== 'brutal' && p !== 'atelier' && p !== 'holodeck' && p !== 'mono') p = 'default';
   var t = localStorage.getItem('__td_theme');
   var a = localStorage.getItem('__td_accent');
   var r = document.documentElement;
@@ -20,7 +20,7 @@ try {
     document.head.appendChild(link);
   }
 
-  if (a && p !== 'brutal' && p !== 'atelier') {
+  if (a) {
     r.style.setProperty('--accent', a);
     r.style.setProperty('--accent-light', a + 'cc');
     r.style.setProperty('--accent-bg', a + '2e');

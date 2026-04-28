@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,50;1,9..144,300..600,50&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@200;300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="js/fouc.js"></script>
   <link id="theme-pack-css" rel="stylesheet" href="css/themes/default.css">
 </head>
@@ -470,6 +472,13 @@
               <span class="pack-desc">Dark glass · purple accent · soft</span>
             </span>
           </button>
+          <button class="pack-card" data-pack="mono">
+            <span class="pack-swatch pack-swatch-mono"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Mono</span>
+              <span class="pack-desc">Minimal · whitespace · sage accent</span>
+            </span>
+          </button>
           <button class="pack-card" data-pack="brutal">
             <span class="pack-swatch pack-swatch-brutal"></span>
             <span class="pack-meta">
@@ -482,6 +491,13 @@
             <span class="pack-meta">
               <span class="pack-name">Atelier</span>
               <span class="pack-desc">Editorial · ivory + oxblood · serif</span>
+            </span>
+          </button>
+          <button class="pack-card" data-pack="holodeck">
+            <span class="pack-swatch pack-swatch-holodeck"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Holodeck</span>
+              <span class="pack-desc">Sci-fi HUD · cyan grid · scanlines</span>
             </span>
           </button>
         </div>
@@ -497,9 +513,10 @@
           <button class="toggle-opt" data-theme="light" id="lightThemeBtn">☀️ Light</button>
         </div>
       </div>
-      <div class="settings-row">
+      <div class="settings-row" id="accentColorRow">
         <div class="settings-label">
           <span>Accent Color</span>
+          <span class="settings-sub-label settings-row-locked-msg" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px;display:none">Locked by current theme pack</span>
         </div>
         <div class="color-swatches" id="accentColors">
           <div class="color-swatch active" data-color="#7c3aed" style="background:#7c3aed"></div>
@@ -532,8 +549,8 @@
 
     <div class="settings-section">
       <div class="settings-section-title">Card Hover Effect</div>
-      <div class="settings-row">
-        <div class="settings-label"><span>Glow Animation</span><span class="settings-sub-label" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px">Cards, folders &amp; quick access</span></div>
+      <div class="settings-row" id="cardGlowRow">
+        <div class="settings-label"><span>Glow Animation</span><span class="settings-sub-label" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px">Cards, folders &amp; quick access</span><span class="settings-sub-label settings-row-locked-msg" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px;display:none">Not supported by current theme pack</span></div>
         <div class="toggle-group" id="cardGlowGroup">
           <button class="toggle-opt" data-glow="off">Off</button>
           <button class="toggle-opt active" data-glow="glow">Glow</button>
