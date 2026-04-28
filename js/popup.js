@@ -100,12 +100,47 @@ function init() {
   }
 
   // ── Populate folder combobox ──────────────────────────────────────────────
+  // Builds a flat indented list: top-level folders followed by their children.
+  // Each item's value is the folder id (or legacy name if no id) and label is breadcrumb-indented.
   function populateFolders(wsId) {
-    const data   = wsData[wsId] || {};
-    const named  = (data.folders || []).map(f => f.name || f);
-    const fromBm = (data.importedBookmarks || []).map(b => b.folderName).filter(Boolean);
-    const all    = [...new Set([...named, ...fromBm])];
-    folderCombo.setItems(all.map(name => ({ value: name, label: name })));
+    const data    = wsData[wsId] || {};
+    const folders = Array.isArray(data.folders) ? data.folders : [];
+    // Index by id + by parent
+    const byParent = new Map();
+    folders.forEach(f => {
+      const pid = f.parentId == null ? null : f.parentId;
+      if (!byParent.has(pid)) byParent.set(pid, []);
+      byParent.get(pid).push(f);
+    });
+    // Add bookmark-derived folder names that aren't yet in folders list (legacy unmigrated)
+    const knownNames = new Set(folders.filter(f => f.parentId == null).map(f => f.name));
+    (data.importedBookmarks || []).forEach(b => {
+      if (b.folderName && !knownNames.has(b.folderName) && !folders.some(f => f.id === b.folderId)) {
+        knownNames.add(b.folderName);
+        const ghost = { _legacy: true, name: b.folderName, parentId: null };
+        if (!byParent.has(null)) byParent.set(null, []);
+        byParent.get(null).push(ghost);
+      }
+    });
+
+    const items = [];
+    const tops = byParent.get(null) || [];
+    tops.forEach(top => {
+      items.push({
+        value: top.id || ('name:' + top.name),
+        label: top.name,
+        emoji: '📁',
+      });
+      const subs = top.id ? (byParent.get(top.id) || []) : [];
+      subs.forEach(sub => {
+        items.push({
+          value: sub.id || ('name:' + sub.name),
+          label: '↳ ' + sub.name,
+          emoji: '📁',
+        });
+      });
+    });
+    folderCombo.setItems(items);
   }
 
   // ── Load tab + storage ────────────────────────────────────────────────────
@@ -218,24 +253,56 @@ function init() {
       if (!data.quickAccess) data.quickAccess = [];
       data.quickAccess.push({ id: Date.now(), name: title, url: currentUrl });
     } else {
-      let folderName;
+      let folderId = null;
+      let folderName = '';
+      if (!data.folders) data.folders = [];
       if (creatingNewFolder) {
         const inp = el('newFolderInput');
         folderName = inp ? inp.value.trim() : '';
         if (!folderName) { showToast('Enter a folder name.', 'err'); return; }
-        if (!data.folders) data.folders = [];
-        if (!data.folders.some(f => (f.name || f) === folderName)) {
-          data.folders.push({ name: folderName });
+        let existing = data.folders.find(f => f.parentId == null && (f.name || f) === folderName);
+        if (!existing) {
+          existing = {
+            id: 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            name: folderName,
+            parentId: null,
+          };
+          data.folders.push(existing);
+        } else if (!existing.id) {
+          existing.id = 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          existing.parentId = null;
         }
+        folderId = existing.id;
       } else {
-        folderName = selectedFolder;
-        if (!folderName) { showToast('Select a folder.', 'err'); return; }
+        const sel = selectedFolder;
+        if (!sel) { showToast('Select a folder.', 'err'); return; }
+        if (typeof sel === 'string' && sel.startsWith('name:')) {
+          // Legacy unmigrated folder — create a real entry now
+          folderName = sel.slice(5);
+          let existing = data.folders.find(f => f.parentId == null && (f.name || f) === folderName);
+          if (!existing) {
+            existing = {
+              id: 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+              name: folderName, parentId: null,
+            };
+            data.folders.push(existing);
+          } else if (!existing.id) {
+            existing.id = 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+            existing.parentId = null;
+          }
+          folderId = existing.id;
+        } else {
+          folderId = sel;
+          const f = data.folders.find(x => x.id === folderId);
+          if (!f) { showToast('Folder not found.', 'err'); return; }
+          folderName = f.name;
+        }
       }
-      if ((data.importedBookmarks || []).some(b => b.url === currentUrl && b.folderName === folderName)) {
+      if ((data.importedBookmarks || []).some(b => b.url === currentUrl && b.folderId === folderId)) {
         showToast('Already in that folder.', 'err'); return;
       }
       if (!data.importedBookmarks) data.importedBookmarks = [];
-      data.importedBookmarks.push({ id: 'p_' + Date.now(), title, url: currentUrl, folderName });
+      data.importedBookmarks.push({ id: 'p_' + Date.now(), title, url: currentUrl, folderId, folderName });
     }
 
     saveBtn.disabled = true;

@@ -142,7 +142,8 @@ body.sidebar-collapsed .sidebar-toggle-icon-expand{display:block}
 .avatar-google-img{width:100%;height:100%;object-fit:cover;border-radius:7px;display:block}
 
 /* ===== COMMAND PALETTE ===== */
-#cmdPaletteOverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:300;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;opacity:0;pointer-events:none;transition:opacity .16s}
+#cmdPaletteOverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;opacity:0;pointer-events:none;transition:opacity .16s}
+#cmdPaletteOverlay.blur-on{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 #cmdPaletteOverlay.open{opacity:1;pointer-events:all}
 #cmdPalette{width:min(640px,92vw);background:#12141c;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;box-shadow:0 8px 60px rgba(0,0,0,.8),0 0 0 1px rgba(124,58,237,.2);transform:translateY(-20px) scale(.96);transition:transform .22s cubic-bezier(.34,1.5,.64,1)}
 #cmdPaletteOverlay.open #cmdPalette{transform:translateY(0) scale(1)}
@@ -870,3 +871,23 @@ body.grid-view-mode .ws-bm-add-card.qa-add-btn{min-height:37px;padding:6px 10px;
 .pack-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pack-name{font-weight:700;font-size:13px}
 .pack-desc{font-size:11px;color:var(--text-muted)}
+
+/* ===== NESTED FOLDERS ===== */
+.folder-card-sub-badge{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 6px;border-radius:8px;background:rgba(124,58,237,.14);color:var(--accent);font-size:10.5px;font-weight:600;letter-spacing:.01em}
+.folder-modal-crumb-link{cursor:pointer;color:var(--text-muted);font-weight:500;transition:color .12s ease}
+.folder-modal-crumb-link:hover{color:var(--accent);text-decoration:underline}
+.folder-modal-crumb-sep{color:var(--text-muted);margin:0 6px;font-size:14px;opacity:.6}
+.folder-modal-items > .folder-modal-subfolders,
+.folder-modal-items > .folder-modal-cards{grid-column:1 / -1}
+.folder-modal-subfolders{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.folder-modal-subfolder{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .14s ease,transform .14s ease,box-shadow .14s ease}
+.folder-modal-subfolder:hover{border-color:var(--border-hover);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.folder-modal-subfolder-top{display:flex;align-items:center;gap:7px;margin-bottom:2px;padding-right:22px}
+.folder-modal-subfolder-name{font-size:13px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder-modal-subfolder-meta{font-size:11px;color:var(--text-muted)}
+.folder-modal-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+body.dragging-bookmark .ws-bm-folder-card,
+body.dragging-bookmark .folder-modal-subfolder{transition:border-color .12s ease,box-shadow .12s ease,background-color .12s ease}
+.folder-drop-hover{border-color:var(--accent)!important;box-shadow:0 0 0 2px rgba(124,58,237,.35),0 6px 18px rgba(124,58,237,.25)!important;background-color:rgba(124,58,237,.06)!important}
+.csel-indent{color:var(--text-muted);margin-right:2px;font-size:11px;opacity:.7}
+.csel-option.csel-depth-1{padding-left:22px}

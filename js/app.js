@@ -370,8 +370,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   _cmdInitKeyboard();
   renderAll();
   loadBookmarks();
-  loadHistory('');
-  loadDownloads();
+  // Defer non-critical tab data until after first paint — they're only used
+  // when the user opens the History/Downloads sections.
+  const onIdle = window.requestIdleCallback || (cb => setTimeout(cb, 200));
+  onIdle(() => { loadHistory(''); loadDownloads(); });
   checkGoogleIdentity();
 
   document.addEventListener('keydown', e => {
@@ -410,6 +412,10 @@ async function loadState() {
   S.workspaces.forEach(ws => {
     if (!S.wsData[ws.id]) S.wsData[ws.id] = DEFAULT_WS_DATA(ws.id);
   });
+  // Nested-folder migration: assign ids/parentId on folders, folderId on bookmarks
+  let foldersMigrated = false;
+  Object.values(S.wsData).forEach(d => { if (migrateWsFolders(d)) foldersMigrated = true; });
+  if (foldersMigrated) save();
   // Migration: ensure AI (id:2) and Dev (id:3) preset workspaces exist
   const wsIds = S.workspaces.map(w => w.id);
   let migrated = false;
@@ -435,7 +441,15 @@ async function loadState() {
   updateAvatarDisplay();
 }
 
-function save() {
+// Debounced save: storage writes are expensive (full wsData blob on each call),
+// so coalesce bursts (drag-reorder, batch toggles, popup save) into one write.
+let _saveTimer = null;
+let _savePending = null;
+const SAVE_DEBOUNCE_MS = 300;
+
+function _writeSave() {
+  _savePending = null;
+  if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
   return API.setLocal({
     user: S.user,
     workspaces: S.workspaces,
@@ -446,6 +460,26 @@ function save() {
     wsData: S.wsData,
   });
 }
+
+function save() {
+  // Returns a promise that resolves when the (eventual) write completes.
+  if (_savePending) return _savePending;
+  _savePending = new Promise(resolve => {
+    if (_saveTimer) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => { _writeSave().then(resolve); }, SAVE_DEBOUNCE_MS);
+  });
+  return _savePending;
+}
+
+// Synchronous flush — call from beforeunload / visibility hidden so nothing is lost.
+function flushSave() {
+  if (!_saveTimer && !_savePending) return Promise.resolve();
+  return _writeSave();
+}
+window.addEventListener('beforeunload', () => { flushSave(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushSave();
+});
 
 // ===== HELPERS =====
 const el = id => document.getElementById(id);
@@ -460,14 +494,23 @@ const fmtTimeAgo = ms => {
 const fmtBytes = b => { if(!b) return '0 B'; const k=1024, s=['B','KB','MB','GB']; const i=Math.floor(Math.log(b)/Math.log(k)); return (b/Math.pow(k,i)).toFixed(1)+' '+s[i]; };
 const fileIcon = e => ({pdf:'📄',zip:'📦',rar:'📦',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',webp:'🖼️',mp4:'🎬',mkv:'🎬',mp3:'🎵',wav:'🎵',doc:'📝',docx:'📝',txt:'📝',xls:'📊',xlsx:'📊',csv:'📊',exe:'⚙️',dmg:'⚙️',js:'💻',ts:'💻',py:'💻',html:'💻',css:'💻'}[e]||'📁');
 function debounce(fn,d){let t; return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),d);}}
+const _favCache = new Map();
 function favSrc(url) {
+  if (!url) return '';
+  const cached = _favCache.get(url);
+  if (cached) return cached;
+  let out;
   try {
     const origin = new URL(url).origin;
-    return `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(origin)}&size=64`;
+    out = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(origin)}&size=64`;
   } catch {
-    return `https://www.google.com/s2/favicons?domain=${getDomain(url)}&sz=64`;
+    out = `https://www.google.com/s2/favicons?domain=${getDomain(url)}&sz=64`;
   }
+  _favCache.set(url, out);
+  return out;
 }
+// Common attrs for every favicon <img> — keeps the browser from blocking decode on render.
+const FAV_ATTRS = 'loading="lazy" decoding="async"';
 
 // Workspace edit state
 let _editingWsId = null;
@@ -490,6 +533,10 @@ let _qaEditId = null;
 function wsData() {
   const d = S.wsData[S.activeWsId] || (S.wsData[S.activeWsId] = { quickAccess: [], notes: [], tasks: [], importedBookmarks: [] });
   if (!d.folders) d.folders = [];
+  if (typeof migrateWsFolders === 'function' && !d._foldersMigrated) {
+    migrateWsFolders(d);
+    d._foldersMigrated = true;
+  }
   return d;
 }
 function wsNotes()  { return wsData().notes;       }
@@ -507,6 +554,95 @@ function allWsFolderNames() {
     if (!seen.has(k)) { seen.add(k); explicit.push(k); }
   });
   return explicit;
+}
+
+// ===== NESTED FOLDER HELPERS =====
+// Folders carry stable {id, name, parentId}. parentId === null means top-level.
+// Nesting is capped at 1 level (a top-level folder may have subfolders, subfolders cannot).
+const MAX_FOLDER_DEPTH = 1;
+
+function _newFolderId() {
+  return 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// Migrate a workspace's folder list + bookmarks to the {id, parentId, folderId} shape.
+// Returns true if anything changed.
+function migrateWsFolders(d) {
+  if (!d) return false;
+  let changed = false;
+  if (!Array.isArray(d.folders)) { d.folders = []; changed = true; }
+  // Build name->id map for top-level (subfolders share names so this is the legacy mapping)
+  d.folders.forEach(f => {
+    if (!f.id) { f.id = _newFolderId(); changed = true; }
+    if (!('parentId' in f)) { f.parentId = null; changed = true; }
+  });
+  // Backfill folderId on bookmarks via folderName lookup (legacy data is flat -> top-level only)
+  if (Array.isArray(d.importedBookmarks)) {
+    d.importedBookmarks.forEach(bm => {
+      if (bm.folderId) return;
+      const name = bm.folderName;
+      if (!name) return;
+      let f = d.folders.find(x => x.parentId == null && x.name === name);
+      if (!f) {
+        // Bookmark refers to a folder not in the explicit list — create the folder entry
+        f = { id: _newFolderId(), name, parentId: null };
+        d.folders.push(f);
+      }
+      bm.folderId = f.id;
+      changed = true;
+    });
+  }
+  return changed;
+}
+
+function getFolderById(id) {
+  return wsFolders().find(f => f.id === id) || null;
+}
+function folderDepth(folder) {
+  if (!folder) return 0;
+  return folder.parentId == null ? 0 : 1;
+}
+function childFolders(folderId) {
+  return wsFolders().filter(f => f.parentId === folderId);
+}
+function topLevelFolders() {
+  return wsFolders().filter(f => f.parentId == null);
+}
+function folderBreadcrumb(folderId) {
+  const f = getFolderById(folderId);
+  if (!f) return [];
+  if (f.parentId == null) return [f];
+  const parent = getFolderById(f.parentId);
+  return parent ? [parent, f] : [f];
+}
+function bookmarksInFolder(folderId) {
+  return wsBookmarks().filter(b => b.folderId === folderId);
+}
+// Build folderId -> bookmarks[] and parentId -> children[] maps in single passes.
+// Use these in renderers / modals instead of calling bookmarksInFolder/childFolders in a loop.
+function buildBookmarksByFolderIndex() {
+  const map = new Map();
+  const all = wsBookmarks();
+  for (let i = 0; i < all.length; i++) {
+    const bm = all[i];
+    if (!bm.folderId) continue;
+    let arr = map.get(bm.folderId);
+    if (!arr) { arr = []; map.set(bm.folderId, arr); }
+    arr.push(bm);
+  }
+  return map;
+}
+function buildChildrenByParentIndex() {
+  const map = new Map();
+  const fs = wsFolders();
+  for (let i = 0; i < fs.length; i++) {
+    const f = fs[i];
+    const pid = f.parentId == null ? null : f.parentId;
+    let arr = map.get(pid);
+    if (!arr) { arr = []; map.set(pid, arr); }
+    arr.push(f);
+  }
+  return map;
 }
 
 // ===== CLOCK =====
@@ -695,15 +831,19 @@ async function checkGoogleIdentity() {
     updateAvatarDisplay();
   } else {
     el('syncCard').style.display = '';
-    el('signInBtn').addEventListener('click', () => {
-      if (IS_CHROME && chrome.identity) {
-        chrome.identity.getAuthToken({interactive:true}, token => {
-          if (token) { checkGoogleIdentity(); } else { showToast('Sign-in cancelled'); }
-        });
-      } else {
-        openModal('profileModal');
-      }
-    });
+    const btn = el('signInBtn');
+    if (btn && !btn.dataset.bound) {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', () => {
+        if (IS_CHROME && chrome.identity) {
+          chrome.identity.getAuthToken({interactive:true}, token => {
+            if (token) { checkGoogleIdentity(); } else { showToast('Sign-in cancelled'); }
+          });
+        } else {
+          openModal('profileModal');
+        }
+      });
+    }
   }
 }
 
@@ -712,9 +852,13 @@ function fetchGoogleProfilePicture() {
   if (!IS_CHROME || !chrome.identity) return;
   chrome.identity.getAuthToken({interactive: false}, async token => {
     if (chrome.runtime.lastError || !token) return;
+    // 3 s timeout so an unreachable Google API can't hang avatar render
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 3000);
     try {
       const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        signal: ctrl.signal,
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -729,7 +873,7 @@ function fetchGoogleProfilePicture() {
         updateGreeting();
         save();
       }
-    } catch {}
+    } catch {} finally { clearTimeout(timeoutId); }
   });
 }
 
@@ -1095,7 +1239,7 @@ function renderFolders(folders) {
     const color = colors[i % colors.length];
     const prev = f.items.slice(0,4);
     const extra = f.items.length - prev.length;
-    const favs = prev.map(it => `<img class="favicon-img" src="${favSrc(it.url)}" alt="">`).join('');
+    const favs = prev.map(it => `<img class="favicon-img" loading="lazy" decoding="async" src="${favSrc(it.url)}" alt="">`).join('');
     return `
       <div class="folder-card" data-fid="${escH(f.id)}">
         <div class="folder-card-top">
@@ -1150,7 +1294,7 @@ function openFolderModal(folderId) {
   itemsEl.innerHTML = folder.items.map(item => `
     <div class="folder-modal-row">
       <a href="${escH(item.url)}" class="folder-modal-item" target="_blank" style="flex:1">
-        <img src="${favSrc(item.url)}" alt="">
+        <img loading="lazy" decoding="async" src="${favSrc(item.url)}" alt="">
         <div class="folder-modal-item-info">
           <span class="folder-modal-item-title">${escH(item.title||item.url)}</span>
           <span class="folder-modal-item-url">${escH(getDomain(item.url))}</span>
@@ -1245,7 +1389,7 @@ function renderAllBookmarks(folders) {
           ${f.items.map(it=>`
             <div class="bm-item-row">
               <a href="${escH(it.url)}" class="bm-item" target="_self">
-                <div class="bm-favicon-wrap"><img src="${favSrc(it.url)}" onerror="this.style.display='none'" alt=""></div>
+                <div class="bm-favicon-wrap"><img loading="lazy" decoding="async" src="${favSrc(it.url)}" onerror="this.style.display='none'" alt=""></div>
                 <div class="bm-item-text">
                   <span class="bm-item-title">${escH(it.title||it.url)}</span>
                   <span class="bm-item-url">${escH(getDomain(it.url))}</span>
@@ -1412,22 +1556,36 @@ function deleteChromeFolder(folderId) {
 }
 
 // ===== WORKSPACE BOOKMARKS =====
+// Cached grid dimensions — invalidated by ResizeObserver only when the grid
+// actually changes width. Saves a forced reflow on every render.
+const _wsBmGridCache = { width: null, cardHeight: null };
+let _wsBmGridResizeObs = null;
+
+// Returns total descendant bookmark count for a folder (own + subfolders').
+function folderTotalBookmarkCount(folderId) {
+  const own = bookmarksInFolder(folderId).length;
+  const sub = childFolders(folderId).reduce((n, c) => n + bookmarksInFolder(c.id).length, 0);
+  return own + sub;
+}
+
 function renderWorkspaceBookmarks() {
   const section = el('wsBmSection');
   if (!section) return;
   if (!IS_CHROME) { section.style.display = 'none'; return; }
   section.style.display = '';
   const grid = el('wsBmGrid');
-  // Group bookmarks by folderName first
-  const groups = {};
-  wsBookmarks().forEach(bm => {
-    const key = bm.folderName || 'Other';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(bm);
-  });
-  // Only show folders that have at least one bookmark
-  const folderNames = allWsFolderNames().filter(f => (groups[f] || []).length > 0);
-  if (!folderNames.length) {
+  // Build indices once (O(n)); avoids quadratic per-folder scans introduced by nesting.
+  const bmIdx = buildBookmarksByFolderIndex();
+  const chIdx = buildChildrenByParentIndex();
+  const totalForFolder = (id) => {
+    const own = (bmIdx.get(id) || []).length;
+    const subs = chIdx.get(id) || [];
+    let sub = 0;
+    for (let i = 0; i < subs.length; i++) sub += (bmIdx.get(subs[i].id) || []).length;
+    return own + sub;
+  };
+  const tops = (chIdx.get(null) || []).filter(f => totalForFolder(f.id) > 0);
+  if (!tops.length) {
     grid.innerHTML = `<button class="qa-add-btn ws-bm-add-card" id="_wsBmAddCard">
       <div class="qa-add-icon">+</div>
       <span style="font-size:11px;color:var(--text-muted)">Add</span>
@@ -1436,15 +1594,21 @@ function renderWorkspaceBookmarks() {
     return;
   }
   const colors = ['#e11d48','#7c3aed','#059669','#f59e0b','#3b82f6','#ec4899','#0891b2','#d97706'];
-  grid.innerHTML = folderNames.map((folder, i) => {
-    const bms = groups[folder] || [];
+  grid.innerHTML = tops.map((folder, i) => {
+    // Aggregate own + subfolder bookmarks for the preview favicons + count
+    const own = bmIdx.get(folder.id) || [];
+    const subs = chIdx.get(folder.id) || [];
+    const subBms = [];
+    for (let s = 0; s < subs.length; s++) subBms.push(...(bmIdx.get(subs[s].id) || []));
+    const allBms = own.concat(subBms);
     const color = colors[i % colors.length];
-    const prev = bms.slice(0, 4);
-    const extra = bms.length - prev.length;
-    const favs = prev.map(bm => `<img class="favicon-img" src="${favSrc(bm.url)}" onerror="this.style.display='none'" alt="">`).join('');
+    const prev = allBms.slice(0, 4);
+    const extra = allBms.length - prev.length;
+    const favs = prev.map(bm => `<img class="favicon-img" loading="lazy" decoding="async" src="${favSrc(bm.url)}" onerror="this.style.display='none'" alt="">`).join('');
+    const subBadge = subs.length ? `<span class="folder-card-sub-badge" data-tip="${subs.length} subfolder${subs.length!==1?'s':''}">📁 ${subs.length}</span>` : '';
     return `
-      <div class="folder-card ws-bm-folder-card" data-folder="${escH(folder)}" draggable="true">
-        <button class="ws-folder-menu-btn" data-folder="${escH(folder)}" data-tip="Options">
+      <div class="folder-card ws-bm-folder-card" data-fid="${escH(folder.id)}" data-folder="${escH(folder.name)}" draggable="true">
+        <button class="ws-folder-menu-btn" data-fid="${escH(folder.id)}" data-tip="Options">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
         </button>
         <div class="folder-card-top">
@@ -1452,8 +1616,8 @@ function renderWorkspaceBookmarks() {
             <span style="font-size:16px">📁</span>
           </div>
           <div class="folder-card-text">
-            <div class="folder-card-name">${escH(folder)}</div>
-            <div class="folder-card-count">${bms.length} bookmark${bms.length !== 1 ? 's' : ''}</div>
+            <div class="folder-card-name">${escH(folder.name)}</div>
+            <div class="folder-card-count">${allBms.length} bookmark${allBms.length !== 1 ? 's' : ''}${subBadge}</div>
           </div>
         </div>
         <div class="folder-favicons">
@@ -1465,28 +1629,36 @@ function renderWorkspaceBookmarks() {
     <div class="qa-add-icon">+</div>
     <span style="font-size:11px;color:var(--text-muted)">Add</span>
   </button>`;
-  // Click card body → open folder modal; three-dot → folder menu
-  grid.querySelectorAll('.ws-bm-folder-card').forEach(card => {
-    card.addEventListener('click', e => {
-      if (e.target.closest('.ws-folder-menu-btn')) return;
-      const fn = card.dataset.folder;
-      openWsBmFolderModal(fn, groups[fn] || []);
+  // Single delegated click handler — bound once. Skips re-binding 40+ listeners per render.
+  if (!grid.dataset.delegated) {
+    grid.dataset.delegated = '1';
+    grid.addEventListener('click', e => {
+      const addBtn = e.target.closest('#_wsBmAddCard');
+      if (addBtn) { openWsBmChooser(); return; }
+      const menuBtn = e.target.closest('.ws-folder-menu-btn');
+      if (menuBtn) {
+        e.stopPropagation();
+        const f = getFolderById(menuBtn.dataset.fid);
+        if (!f) return;
+        openFolderCardCtxMenu(menuBtn, f.name, bookmarksInFolder(f.id), f.id);
+        return;
+      }
+      const card = e.target.closest('.ws-bm-folder-card');
+      if (card) openWsBmFolderModal(card.dataset.fid);
     });
-  });
-  grid.querySelectorAll('.ws-folder-menu-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      openFolderCardCtxMenu(btn, btn.dataset.folder, groups[btn.dataset.folder] || []);
-    });
-  });
-  grid.querySelector('#_wsBmAddCard')?.addEventListener('click', openWsBmChooser);
+  }
+
+  // Bookmark-drag-onto-folder (drop-to-move + spring-open after dwell)
+  attachBookmarkDropTargets(grid, '.ws-bm-folder-card');
 
   initDragReorder(grid, '.ws-bm-folder-card', () => {
-    const newOrder = [...grid.querySelectorAll('.ws-bm-folder-card')].map(el => el.dataset.folder);
+    const newIds = [...grid.querySelectorAll('.ws-bm-folder-card')].map(el => el.dataset.fid);
     const d = wsData();
-    const existingMap = new Map((d.folders || []).map(f => [f.name, f]));
-    // Persist new order; convert any bookmark-derived folders to explicit entries
-    d.folders = newOrder.map(name => existingMap.get(name) || { name });
+    // Reorder only top-level entries; keep subfolders in place after their parents
+    const subs = (d.folders || []).filter(f => f.parentId != null);
+    const topMap = new Map((d.folders || []).filter(f => f.parentId == null).map(f => [f.id, f]));
+    const orderedTops = newIds.map(id => topMap.get(id)).filter(Boolean);
+    d.folders = [...orderedTops, ...subs];
     save();
   });
 
@@ -1494,12 +1666,27 @@ function renderWorkspaceBookmarks() {
   let viewMoreBtn = el('_wsBmViewMore');
   if (viewMoreBtn) viewMoreBtn.remove();
 
-  // Calculate how many items fit in 2 rows based on current grid width
+  // Calculate how many items fit in 2 rows. ResizeObserver invalidates the cache
+  // only when the grid width actually changes — so most renders skip the layout read.
   const colWidth = 200 + 12; // minmax + gap
-  const gridWidth = grid.offsetWidth || section.offsetWidth || (window.innerWidth - 260);
-  const cols = Math.max(2, Math.floor((gridWidth + 12) / colWidth));
+  if (_wsBmGridCache.width == null) {
+    _wsBmGridCache.width = grid.offsetWidth || section.offsetWidth || (window.innerWidth - 260);
+  }
+  if (!_wsBmGridResizeObs && typeof ResizeObserver !== 'undefined') {
+    _wsBmGridResizeObs = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const w = Math.round(entry.contentRect.width);
+        if (w !== _wsBmGridCache.width) {
+          _wsBmGridCache.width = w;
+          _wsBmGridCache.cardHeight = null; // re-measure on next render
+        }
+      }
+    });
+    _wsBmGridResizeObs.observe(grid);
+  }
+  const cols = Math.max(2, Math.floor((_wsBmGridCache.width + 12) / colWidth));
   const twoRowsMax = cols * 2;
-  const totalCards = folderNames.length + 1; // +1 for Add card
+  const totalCards = tops.length + 1; // +1 for Add card
 
   const addCard = grid.querySelector('#_wsBmAddCard');
 
@@ -1518,27 +1705,33 @@ function renderWorkspaceBookmarks() {
   if (totalCards > twoRowsMax) {
     // Place add card at last slot of 2nd row, hiding one extra folder card
     placeAddCardCollapsed();
-    // Measure actual card height after render and set max-height for 2 rows
-    requestAnimationFrame(() => {
-      const firstCard = grid.querySelector('.folder-card');
-      if (firstCard) {
-        const cardH = firstCard.offsetHeight;
-        grid.style.maxHeight = (cardH * 2 + 12 + 8) + 'px'; // +8 for padding
-      }
-    });
+    // Measure card height once, then reuse — only re-measures when ResizeObserver invalidates.
+    if (_wsBmGridCache.cardHeight) {
+      grid.style.maxHeight = (_wsBmGridCache.cardHeight * 2 + 12 + 8) + 'px';
+    } else {
+      requestAnimationFrame(() => {
+        const firstCard = grid.querySelector('.folder-card');
+        if (firstCard) {
+          const cardH = firstCard.offsetHeight;
+          _wsBmGridCache.cardHeight = cardH;
+          grid.style.maxHeight = (cardH * 2 + 12 + 8) + 'px';
+        }
+      });
+    }
     grid.classList.add('ws-bm-grid-collapsed');
     viewMoreBtn = document.createElement('button');
     viewMoreBtn.id = '_wsBmViewMore';
     viewMoreBtn.className = 'ws-bm-view-more-btn';
     // hidden = all folders not visible + the one displaced by add card
-    const hiddenCount = folderNames.length - (twoRowsMax - 1);
+    const hiddenCount = tops.length - (twoRowsMax - 1);
     viewMoreBtn.innerHTML = `View ${hiddenCount} more <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>`;
     viewMoreBtn.addEventListener('click', () => {
       const collapsed = grid.classList.toggle('ws-bm-grid-collapsed');
       if (collapsed) {
         placeAddCardCollapsed();
-        const firstCard = grid.querySelector('.folder-card');
-        if (firstCard) grid.style.maxHeight = (firstCard.offsetHeight * 2 + 12 + 8) + 'px';
+        const cardH = _wsBmGridCache.cardHeight || (grid.querySelector('.folder-card')?.offsetHeight || 100);
+        _wsBmGridCache.cardHeight = cardH;
+        grid.style.maxHeight = (cardH * 2 + 12 + 8) + 'px';
       } else {
         placeAddCardExpanded();
         // scrollHeight returns full content height even while max-height is constraining it
@@ -1579,7 +1772,7 @@ function closeCtxMenu() {
   _ctxSub?.classList.remove('open');
 }
 
-function openFolderCardCtxMenu(btn, folderName, items) {
+function openFolderCardCtxMenu(btn, folderName, items, folderId) {
   const menu = _getOrCreateCtxMenu();
   const rect = btn.getBoundingClientRect();
   menu.style.top  = (rect.bottom + 4) + 'px';
@@ -1605,10 +1798,10 @@ function openFolderCardCtxMenu(btn, folderName, items) {
       Delete folder
     </div>`;
   menu.querySelector('[data-action="add"]').addEventListener('click', () => {
-    closeCtxMenu(); openWsBookmarkEditModal(folderName, null);
+    closeCtxMenu(); openWsBookmarkEditModal(folderName, null, folderId);
   });
   menu.querySelector('[data-action="rename"]').addEventListener('click', () => {
-    closeCtxMenu(); openWsFolderEditModal(folderName);
+    closeCtxMenu(); openWsFolderEditModal(folderId || folderName);
   });
   menu.querySelector('[data-action="move-ws"]')?.addEventListener('click', e => {
     e.stopPropagation();
@@ -1657,7 +1850,7 @@ function openFolderCardCtxMenu(btn, folderName, items) {
     confirm2(
       `Delete "${folderName}"?`,
       count ? `This will also delete ${count} bookmark${count !== 1 ? 's' : ''} inside.` : 'The folder is empty.',
-      () => removeWsFolder(folderName)
+      () => folderId ? removeWsFolderById(folderId) : removeWsFolder(folderName)
     );
   });
   menu.classList.add('open');
@@ -1673,7 +1866,7 @@ function openBmCtxMenu(btn, bm, currentFolder) {
   menu.style.top  = (rect.bottom + 4) + 'px';
   menu.style.left = Math.min(rect.left, window.innerWidth - 210) + 'px';
 
-  const otherFolders = allWsFolderNames().filter(f => f !== currentFolder);
+  const otherFoldersIndented = allWsFoldersIndented().filter(f => f.label !== currentFolder || f.depth > 0);
   const otherWorkspaces = S.workspaces.filter(w => w.id !== S.activeWsId);
   const isPinned = wsQA().some(q => q.url === bm.url);
 
@@ -1686,7 +1879,7 @@ function openBmCtxMenu(btn, bm, currentFolder) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
       ${isPinned ? 'Unpin from Quick Access' : 'Pin to Quick Access'}
     </div>
-    ${otherFolders.length ? `<div class="bm-ctx-item" data-action="move-folder">
+    ${otherFoldersIndented.length ? `<div class="bm-ctx-item" data-action="move-folder">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
       Move to folder
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:auto"><polyline points="9,6 15,12 9,18"/></svg>
@@ -1722,9 +1915,10 @@ function openBmCtxMenu(btn, bm, currentFolder) {
   menu.querySelector('[data-action="move-folder"]')?.addEventListener('click', e => {
     e.stopPropagation();
     const itemRect = e.currentTarget.getBoundingClientRect();
-    _ctxSub.innerHTML = otherFolders.map(f =>
-      `<div class="bm-ctx-sub-item" data-folder="${escH(f)}">📁 ${escH(f)}</div>`
-    ).join('');
+    _ctxSub.innerHTML = otherFoldersIndented.map(f => {
+      const indent = f.depth ? '<span class="csel-indent">↳</span> ' : '';
+      return `<div class="bm-ctx-sub-item" data-fid="${escH(f.id)}">${indent}📁 ${escH(f.label)}</div>`;
+    }).join('');
     _ctxSub.classList.add('open');
     requestAnimationFrame(() => {
       const subW = _ctxSub.offsetWidth, subH = _ctxSub.offsetHeight;
@@ -1736,13 +1930,15 @@ function openBmCtxMenu(btn, bm, currentFolder) {
     _ctxSub.querySelectorAll('.bm-ctx-sub-item').forEach(opt => {
       opt.addEventListener('click', async () => {
         const d = wsData();
+        const tgt = (d.folders || []).find(f => f.id === opt.dataset.fid);
+        if (!tgt) return;
         d.importedBookmarks = (d.importedBookmarks || []).map(b =>
-          b.id === bm.id ? { ...b, folderName: opt.dataset.folder } : b
+          b.id === bm.id ? { ...b, folderId: tgt.id, folderName: tgt.name } : b
         );
         await save();
         closeCtxMenu(); closeModal('folderModal');
         renderWorkspaceBookmarks(); renderSidebarFolders();
-        showToast(`Moved to "${opt.dataset.folder}"`, 'success');
+        showToast(`Moved to "${tgt.name}"`, 'success');
       });
     });
   });
@@ -1832,22 +2028,58 @@ ${folderItems}
   _ctxSub.classList.remove('open');
 }
 
-function openWsBmFolderModal(folderName, items) {
-  closeCtxMenu();
-  el('folderModalIcon').textContent = '📁';
-  el('folderModalTitle').textContent = folderName;
-  el('folderModalCount').textContent = items.length ? `${items.length} bookmark${items.length !== 1 ? 's' : ''}` : 'Empty';
+// Currently-open workspace folder modal id (for re-rendering after drop)
+let _wsFolderModalId = null;
 
+function openWsBmFolderModal(folderId /* or legacy folderName */, _legacyItems) {
+  closeCtxMenu();
+  // Backwards compat: callers may still pass (folderName, items)
+  let folder = getFolderById(folderId);
+  if (!folder && typeof folderId === 'string') {
+    folder = wsFolders().find(f => f.parentId == null && f.name === folderId) || null;
+  }
+  if (!folder) return;
+
+  _wsFolderModalId = folder.id;
+  // Index once to avoid repeated scans when computing subfolder bookmark counts
+  const bmIdx = buildBookmarksByFolderIndex();
+  const chIdx = buildChildrenByParentIndex();
+  const items = bmIdx.get(folder.id) || [];
+  const subs  = chIdx.get(folder.id) || [];
+  const crumb = folderBreadcrumb(folder.id);
+  const isTop = folder.parentId == null;
+
+  // View mode (grid/list) for the bookmark cards section — persisted via localStorage.
   let _fmView = 'grid';
   try { _fmView = localStorage.getItem('__td_fmView') === 'list' ? 'list' : 'grid'; } catch(e){}
 
+  // Header: breadcrumb when we're inside a subfolder
+  const titleEl = el('folderModalTitle');
+  if (crumb.length > 1) {
+    const root = crumb[0];
+    titleEl.innerHTML = `<span class="folder-modal-crumb-link" data-fid="${escH(root.id)}">${escH(root.name)}</span><span class="folder-modal-crumb-sep">›</span><span>${escH(folder.name)}</span>`;
+    titleEl.querySelector('.folder-modal-crumb-link')?.addEventListener('click', () => openWsBmFolderModal(root.id));
+  } else {
+    titleEl.textContent = folder.name;
+  }
+  el('folderModalIcon').textContent = '📁';
+  const total = items.length + subs.reduce((n, s) => n + (bmIdx.get(s.id) || []).length, 0);
+  const subSummary = subs.length ? ` · ${subs.length} subfolder${subs.length!==1?'s':''}` : '';
+  el('folderModalCount').textContent = total ? `${total} bookmark${total !== 1 ? 's' : ''}${subSummary}` : (subs.length ? `${subs.length} subfolder${subs.length!==1?'s':''}` : 'Empty');
+
+  // Header actions: View toggle, Add Bookmark, New Subfolder (only at top-level), Rename, Delete
   const actionsEl = el('folderModalActions');
   const gridIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`;
   const listIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>`;
+  const newSubBtn = isTop ? `
+    <button class="icon-btn" id="_wsFmNewSub" data-tip="New subfolder" style="width:26px;height:26px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+    </button>` : '';
   actionsEl.innerHTML = `
     <button class="icon-btn" id="_wsFmViewGrid" data-tip="Grid view" style="width:26px;height:26px">${gridIcon}</button>
     <button class="icon-btn" id="_wsFmViewList" data-tip="List view" style="width:26px;height:26px">${listIcon}</button>
     <button class="btn-primary" id="_wsFmAddBm" style="font-size:12px;padding:5px 10px">+ Add Bookmark</button>
+    ${newSubBtn}
     <button class="icon-btn" id="_wsFmRename" data-tip="Rename folder" style="width:26px;height:26px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
@@ -1872,24 +2104,53 @@ function openWsBmFolderModal(folderName, items) {
 
   actionsEl.querySelector('#_wsFmAddBm').addEventListener('click', () => {
     closeModal('folderModal');
-    openWsBookmarkEditModal(folderName, null);
+    openWsBookmarkEditModal(folder.name, null, folder.id);
+  });
+  actionsEl.querySelector('#_wsFmNewSub')?.addEventListener('click', () => {
+    closeModal('folderModal');
+    openWsFolderEditModal(null, folder.id);
   });
   actionsEl.querySelector('#_wsFmRename').addEventListener('click', () => {
     closeModal('folderModal');
-    openWsFolderEditModal(folderName);
+    openWsFolderEditModal(folder.id);
   });
   actionsEl.querySelector('#_wsFmDelete').addEventListener('click', () => {
-    const count = items.length;
-    confirm2(
-      `Delete "${folderName}"?`,
-      count ? `This will also delete ${count} bookmark${count !== 1 ? 's' : ''} inside.` : 'The folder is empty.',
-      () => removeWsFolder(folderName)
-    );
+    const subBmCount = subs.reduce((n,s) => n + (bmIdx.get(s.id) || []).length, 0);
+    const total = items.length + subBmCount;
+    let msg;
+    if (subs.length && total) msg = `This will also delete ${subs.length} subfolder${subs.length!==1?'s':''} and ${total} bookmark${total!==1?'s':''} inside.`;
+    else if (subs.length)     msg = `This will also delete ${subs.length} subfolder${subs.length!==1?'s':''}.`;
+    else if (total)           msg = `This will also delete ${total} bookmark${total!==1?'s':''} inside.`;
+    else                      msg = 'The folder is empty.';
+    confirm2(`Delete "${folder.name}"?`, msg, () => removeWsFolderById(folder.id));
   });
 
   const itemsEl = el('folderModalItems');
+
+  // Build subfolder strip (renders the same regardless of view mode)
+  let stripHtml = '';
+  if (subs.length) {
+    stripHtml = `<div class="folder-modal-subfolders">${subs.map(s => {
+      const sBms = bmIdx.get(s.id) || [];
+      const prev = sBms.slice(0, 4);
+      const favs = prev.map(bm => `<img class="favicon-img" loading="lazy" decoding="async" src="${favSrc(bm.url)}" onerror="this.style.display='none'" alt="">`).join('');
+      return `
+        <div class="folder-modal-subfolder" data-fid="${escH(s.id)}" draggable="true">
+          <button class="ws-folder-menu-btn" data-fid="${escH(s.id)}" data-tip="Options" style="position:absolute;top:6px;right:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+          </button>
+          <div class="folder-modal-subfolder-top">
+            <span style="font-size:14px">📁</span>
+            <span class="folder-modal-subfolder-name">${escH(s.name)}</span>
+          </div>
+          <div class="folder-modal-subfolder-meta">${sBms.length} bookmark${sBms.length!==1?'s':''}</div>
+          <div class="folder-favicons" style="margin-top:6px">${favs}</div>
+        </div>`;
+    }).join('')}</div>`;
+  }
+
   function renderItems() {
-    if (!items.length) {
+    if (!items.length && !subs.length) {
       itemsEl.style.display = 'block';
       itemsEl.classList.remove('fm-list');
       itemsEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:20px 0;text-align:center">No bookmarks yet. Click "+ Add Bookmark" above.</div>';
@@ -1897,60 +2158,96 @@ function openWsBmFolderModal(folderName, items) {
     }
     itemsEl.style.display = '';
     itemsEl.classList.toggle('fm-list', _fmView === 'list');
-    if (_fmView === 'list') {
-      itemsEl.innerHTML = items.map(bm => {
-        const name = bm.title || getDomain(bm.url);
-        return `
-        <div class="bm-list-row" data-bmid="${escH(bm.id)}" draggable="true">
-          <a class="bm-list-link" href="${escH(bm.url)}" target="_self">
-            <img class="bm-list-favicon" src="${favSrc(bm.url)}" onerror="this.style.visibility='hidden'" alt="">
-            <div class="bm-list-info">
-              <span class="bm-list-name">${escH(name)}</span>
-              <span class="bm-list-domain">${escH(getDomain(bm.url))}</span>
+
+    // Build bookmark cards (grid) or rows (list)
+    let cardsHtml = '';
+    if (items.length) {
+      if (_fmView === 'list') {
+        cardsHtml = items.map(bm => {
+          const name = bm.title || getDomain(bm.url);
+          return `
+          <div class="bm-list-row" data-bmid="${escH(bm.id)}" draggable="true">
+            <a class="bm-list-link" href="${escH(bm.url)}" target="_self">
+              <img class="bm-list-favicon" loading="lazy" decoding="async" src="${favSrc(bm.url)}" onerror="this.style.visibility='hidden'" alt="">
+              <div class="bm-list-info">
+                <span class="bm-list-name">${escH(name)}</span>
+                <span class="bm-list-domain">${escH(getDomain(bm.url))}</span>
+              </div>
+            </a>
+            <button class="bm-card-menu bm-list-menu" data-bmid="${escH(bm.id)}" data-tip="Options">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
+          </div>`;
+        }).join('');
+      } else {
+        cardsHtml = items.map(bm => {
+          const letter = (bm.title || getDomain(bm.url) || '?')[0].toUpperCase();
+          const name = bm.title || getDomain(bm.url);
+          return `
+          <a class="bm-card" href="${escH(bm.url)}" target="_self" data-bmid="${escH(bm.id)}" draggable="true" data-tip="${escH(name)}">
+            <button class="bm-card-menu" data-bmid="${escH(bm.id)}" data-tip="Options">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
+            <div class="bm-card-icon" data-letter="${escH(letter)}">
+              <img loading="lazy" decoding="async" src="${favSrc(bm.url)}" onerror="this.style.display='none';this.parentNode.classList.add('bm-icon-fallback')" alt="">
             </div>
-          </a>
-          <button class="bm-card-menu bm-list-menu" data-bmid="${escH(bm.id)}" data-tip="Options">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-          </button>
-        </div>`;
-      }).join('');
-    } else {
-      itemsEl.innerHTML = items.map(bm => {
-        const letter = (bm.title || getDomain(bm.url) || '?')[0].toUpperCase();
-        const name = bm.title || getDomain(bm.url);
-        return `
-        <a class="bm-card" href="${escH(bm.url)}" target="_self" data-bmid="${escH(bm.id)}" draggable="true" data-tip="${escH(name)}">
-          <button class="bm-card-menu" data-bmid="${escH(bm.id)}" data-tip="Options">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-          </button>
-          <div class="bm-card-icon" data-letter="${escH(letter)}">
-            <img src="${favSrc(bm.url)}" onerror="this.style.display='none';this.parentNode.classList.add('bm-icon-fallback')" alt="">
-          </div>
-          <div class="bm-card-name">${escH(name)}</div>
-          <div class="bm-card-domain">${escH(getDomain(bm.url))}</div>
-        </a>`;
-      }).join('');
+            <div class="bm-card-name">${escH(name)}</div>
+            <div class="bm-card-domain">${escH(getDomain(bm.url))}</div>
+          </a>`;
+        }).join('');
+      }
     }
-    itemsEl.querySelectorAll('.bm-card-menu').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        const bm = items.find(b => b.id === btn.dataset.bmid);
-        if (bm) openBmCtxMenu(btn, bm, folderName);
+
+    itemsEl.innerHTML = stripHtml + (cardsHtml ? `<div class="folder-modal-cards">${cardsHtml}</div>` : '');
+
+    // Single delegated click on the modal body — bound once across modal opens/view-toggles.
+    if (!itemsEl.dataset.delegated) {
+      itemsEl.dataset.delegated = '1';
+      itemsEl.addEventListener('click', e => {
+        const subMenuBtn = e.target.closest('.folder-modal-subfolder .ws-folder-menu-btn');
+        if (subMenuBtn) {
+          e.stopPropagation();
+          const f = getFolderById(subMenuBtn.dataset.fid);
+          if (!f) return;
+          openFolderCardCtxMenu(subMenuBtn, f.name, bookmarksInFolder(f.id), f.id);
+          return;
+        }
+        const subCard = e.target.closest('.folder-modal-subfolder');
+        if (subCard) { openWsBmFolderModal(subCard.dataset.fid); return; }
+        const bmMenu = e.target.closest('.bm-card-menu');
+        if (bmMenu) {
+          e.preventDefault();
+          e.stopPropagation();
+          const fid = _wsFolderModalId;
+          const bms = fid ? (wsBookmarks().filter(b => b.folderId === fid)) : [];
+          const bm = bms.find(b => b.id === bmMenu.dataset.bmid);
+          if (bm) {
+            const cur = getFolderById(fid);
+            openBmCtxMenu(bmMenu, bm, cur ? cur.name : '');
+          }
+        }
       });
-    });
-    const rowSel = _fmView === 'list' ? '.bm-list-row' : '.bm-card';
-    initDragReorder(itemsEl, rowSel, () => {
-      const newIds = [...itemsEl.querySelectorAll(rowSel)].map(el => el.dataset.bmid);
-      const d = wsData();
-      const folderIndices = d.importedBookmarks.reduce((acc, b, i) => {
-        if ((b.folderName || 'Other') === folderName) acc.push(i);
-        return acc;
-      }, []);
-      const reordered = newIds.map(id => d.importedBookmarks.find(b => b.id === id)).filter(Boolean);
-      folderIndices.forEach((origIdx, i) => { if (reordered[i]) d.importedBookmarks[origIdx] = reordered[i]; });
-      save();
-    });
+    }
+
+    // Spring-load drop targets on subfolder cards
+    if (subs.length) attachBookmarkDropTargets(itemsEl, '.folder-modal-subfolder');
+
+    // Drag-reorder for bookmark cards/rows in whichever view is active
+    const cardsContainer = itemsEl.querySelector('.folder-modal-cards');
+    if (cardsContainer && items.length) {
+      const rowSel = _fmView === 'list' ? '.bm-list-row' : '.bm-card';
+      initDragReorder(cardsContainer, rowSel, () => {
+        const newIds = [...cardsContainer.querySelectorAll(rowSel)].map(el => el.dataset.bmid);
+        const d = wsData();
+        const folderIndices = d.importedBookmarks.reduce((acc, b, i) => {
+          if (b.folderId === folder.id) acc.push(i);
+          return acc;
+        }, []);
+        const reordered = newIds.map(id => d.importedBookmarks.find(b => b.id === id)).filter(Boolean);
+        folderIndices.forEach((origIdx, i) => { if (reordered[i]) d.importedBookmarks[origIdx] = reordered[i]; });
+        save();
+      });
+    }
   }
   renderItems();
   openModal('folderModal');
@@ -1967,11 +2264,25 @@ function openWsBmChooser() {
   openModal('wsBmChooserModal');
 }
 
-function openWsFolderEditModal(existingName) {
-  _wsFolderEditName = existingName || null;
-  const isEdit = !!existingName;
-  el('wsFolderEditTitle').textContent = isEdit ? 'Rename Folder' : 'New Folder';
-  el('wsFolderEditNameInput').value = existingName || '';
+// Edit existing folder: pass folderId. Create new: pass null + optional parentId for subfolder.
+let _wsFolderNewParentId = null;
+function openWsFolderEditModal(existingFolderIdOrName, parentId) {
+  let existingId = null;
+  if (existingFolderIdOrName) {
+    const byId = getFolderById(existingFolderIdOrName);
+    existingId = byId ? byId.id : (wsFolders().find(f => f.parentId == null && f.name === existingFolderIdOrName)?.id || null);
+  }
+  _wsFolderEditName = existingId; // store id (legacy var name)
+  _wsFolderNewParentId = parentId || null;
+  const isEdit = !!existingId;
+  const existingFolder = isEdit ? getFolderById(existingId) : null;
+  let title = isEdit ? 'Rename Folder' : 'New Folder';
+  if (!isEdit && parentId) {
+    const parent = getFolderById(parentId);
+    if (parent) title = `New Subfolder in “${parent.name}”`;
+  }
+  el('wsFolderEditTitle').textContent = title;
+  el('wsFolderEditNameInput').value = existingFolder ? existingFolder.name : '';
   el('wsFolderEditSaveBtn').textContent = isEdit ? 'Save' : 'Create';
   openModal('wsFolderEditModal');
 }
@@ -1981,25 +2292,45 @@ async function saveWsFolderEdit() {
   if (!name) { showToast('Enter a folder name', 'error'); return; }
   const d = wsData();
   if (_wsFolderEditName) {
-    // Rename: update folders array + all bookmark folderName references
-    const f = d.folders.find(x => x.name === _wsFolderEditName);
-    if (f) f.name = name;
-    else d.folders.push({ name });
+    // Rename existing folder by id
+    const f = d.folders.find(x => x.id === _wsFolderEditName);
+    if (!f) { showToast('Folder not found', 'error'); return; }
+    const oldName = f.name;
+    f.name = name;
+    // Keep folderName mirror in sync for any bookmark inside this folder
     d.importedBookmarks = (d.importedBookmarks || []).map(b =>
-      b.folderName === _wsFolderEditName ? { ...b, folderName: name } : b
+      b.folderId === f.id ? { ...b, folderName: name } : b
     );
     showToast('Folder renamed!', 'success');
   } else {
-    // Create: check for duplicate
-    const existing = allWsFolderNames();
-    if (existing.includes(name)) { showToast('A folder with that name already exists', 'error'); return; }
-    d.folders.push({ name });
+    // Create new folder. Cap depth at MAX_FOLDER_DEPTH.
+    const parentId = _wsFolderNewParentId || null;
+    if (parentId) {
+      const parent = d.folders.find(x => x.id === parentId);
+      if (!parent) { showToast('Parent folder not found', 'error'); return; }
+      if (parent.parentId != null) { showToast('Subfolders cannot be nested further', 'error'); return; }
+      if (parent.parentId == null && /* depth 0 */ MAX_FOLDER_DEPTH < 1) {
+        showToast('Nesting is disabled', 'error'); return;
+      }
+    }
+    // Duplicate check within same parent scope
+    const sameParent = d.folders.filter(f => f.parentId === parentId);
+    if (sameParent.some(f => f.name.toLowerCase() === name.toLowerCase())) {
+      showToast('A folder with that name already exists here', 'error'); return;
+    }
+    const newFolder = { id: _newFolderId(), name, parentId };
+    d.folders.push(newFolder);
     showToast('Folder created!', 'success');
+    _wsFolderNewParentId = null;
   }
   await save();
   closeModal('wsFolderEditModal');
   renderWorkspaceBookmarks();
   renderSidebarFolders();
+  if (_wsFolderModalId) {
+    // Re-render the open folder modal so changes show
+    openWsBmFolderModal(_wsFolderModalId);
+  }
 }
 
 function _setWsBmFolder(value, label) {
@@ -2018,28 +2349,50 @@ function _closeCsel() {
   el('wsBmFolderDropdown')?.classList.remove('open');
 }
 
-function openWsBookmarkEditModal(defaultFolderName, bmId) {
+// Build a flat indented list of {id, label, depth} for all folders in the active workspace
+function allWsFoldersIndented() {
+  const out = [];
+  topLevelFolders().forEach(top => {
+    out.push({ id: top.id, label: top.name, depth: 0 });
+    childFolders(top.id).forEach(sub => {
+      out.push({ id: sub.id, label: sub.name, depth: 1 });
+    });
+  });
+  return out;
+}
+
+function openWsBookmarkEditModal(defaultFolderName, bmId, defaultFolderId) {
   _wsBmEditId = bmId || null;
   _wsBmDefaultFolder = defaultFolderName || null;
   const isEdit = !!bmId;
-  const folders = allWsFolderNames();
+  const folderList = allWsFoldersIndented();
 
-  // Build custom dropdown options
+  // Build custom dropdown options (indented breadcrumb-style entries)
   const dropdown = el('wsBmFolderDropdown');
-  if (!folders.length) {
+  if (!folderList.length) {
     dropdown.innerHTML = `<div class="csel-option" data-value="__new__">📁 Create a folder first...</div>`;
     _setWsBmFolder('__new__', '📁 Create a folder first...');
   } else {
-    dropdown.innerHTML = folders.map(f =>
-      `<div class="csel-option" data-value="${escH(f)}">📁 ${escH(f)}</div>`
-    ).join('');
-    const initial = (isEdit
-      ? (wsBookmarks().find(b => b.id === bmId)?.folderName)
-      : defaultFolderName) || folders[0];
-    _setWsBmFolder(initial, `📁 ${initial}`);
+    dropdown.innerHTML = folderList.map(f => {
+      const indent = f.depth ? '<span class="csel-indent">↳</span> ' : '';
+      return `<div class="csel-option csel-depth-${f.depth}" data-value="${escH(f.id)}">${indent}📁 ${escH(f.label)}</div>`;
+    }).join('');
+    let initialId = null;
+    if (isEdit) {
+      const bm = wsBookmarks().find(b => b.id === bmId);
+      initialId = bm?.folderId || null;
+    } else if (defaultFolderId) {
+      initialId = defaultFolderId;
+    } else if (defaultFolderName) {
+      initialId = wsFolders().find(f => f.parentId == null && f.name === defaultFolderName)?.id || null;
+    }
+    if (!initialId) initialId = folderList[0].id;
+    const sel = folderList.find(f => f.id === initialId) || folderList[0];
+    const indent = sel.depth ? '↳ ' : '';
+    _setWsBmFolder(sel.id, `${indent}📁 ${sel.label}`);
   }
   dropdown.querySelectorAll('.csel-option').forEach(opt => {
-    opt.addEventListener('click', () => _setWsBmFolder(opt.dataset.value, opt.textContent));
+    opt.addEventListener('click', () => _setWsBmFolder(opt.dataset.value, opt.textContent.trim()));
   });
 
   if (isEdit) {
@@ -2061,8 +2414,8 @@ function openWsBookmarkEditModal(defaultFolderName, bmId) {
 }
 
 async function saveWsBookmarkEdit() {
-  const folder = _wsBmFolderValue;
-  if (folder === '__new__') {
+  const folderValue = _wsBmFolderValue;
+  if (folderValue === '__new__') {
     closeModal('wsBookmarkEditModal');
     openWsFolderEditModal(null);
     return;
@@ -2072,13 +2425,16 @@ async function saveWsBookmarkEdit() {
   if (!url) { showToast('Enter a URL', 'error'); return; }
   const fullUrl = url.startsWith('http') ? url : 'https://' + url;
   const d = wsData();
+  // folderValue is a folder id
+  const tgt = (d.folders || []).find(f => f.id === folderValue);
+  if (!tgt) { showToast('Folder not found', 'error'); return; }
   if (_wsBmEditId) {
     d.importedBookmarks = (d.importedBookmarks || []).map(b =>
-      b.id === _wsBmEditId ? { ...b, title: title || fullUrl, url: fullUrl, folderName: folder } : b
+      b.id === _wsBmEditId ? { ...b, title: title || fullUrl, url: fullUrl, folderId: tgt.id, folderName: tgt.name } : b
     );
     showToast('Bookmark updated!', 'success');
   } else {
-    const newBm = { id: 'ws_' + Date.now(), title: title || fullUrl, url: fullUrl, folderName: folder };
+    const newBm = { id: 'ws_' + Date.now(), title: title || fullUrl, url: fullUrl, folderId: tgt.id, folderName: tgt.name };
     d.importedBookmarks = [...(d.importedBookmarks || []), newBm];
     showToast('Bookmark added!', 'success');
   }
@@ -2088,9 +2444,31 @@ async function saveWsBookmarkEdit() {
   renderSidebarFolders();
 }
 
-async function removeWsFolder(folderName) {
+// Delete folder + all its descendants and bookmarks (recursive).
+async function removeWsFolderById(folderId) {
   const d = wsData();
-  d.folders = (d.folders || []).filter(f => f.name !== folderName);
+  const target = (d.folders || []).find(f => f.id === folderId);
+  if (!target) return;
+  const ids = new Set([folderId]);
+  // Add direct children (only one level allowed)
+  (d.folders || []).filter(f => f.parentId === folderId).forEach(f => ids.add(f.id));
+  d.folders = (d.folders || []).filter(f => !ids.has(f.id));
+  d.importedBookmarks = (d.importedBookmarks || []).filter(b => !ids.has(b.folderId));
+  await save();
+  closeModal('folderModal');
+  _wsFolderModalId = null;
+  renderWorkspaceBookmarks();
+  renderSidebarFolders();
+  showToast('Folder deleted', 'success');
+}
+
+// Legacy delete-by-name: still used by older code paths (sidebar / context menu) — resolve to id then delegate.
+async function removeWsFolder(folderName) {
+  const f = wsFolders().find(x => x.parentId == null && x.name === folderName);
+  if (f) return removeWsFolderById(f.id);
+  // Fallback: legacy unmigrated data — name-based purge
+  const d = wsData();
+  d.folders = (d.folders || []).filter(x => x.name !== folderName);
   d.importedBookmarks = (d.importedBookmarks || []).filter(b => (b.folderName || 'Other') !== folderName);
   await save();
   closeModal('folderModal');
@@ -2125,11 +2503,96 @@ async function importAllChromeBookmarks() {
   showToast(`Imported ${allItems.length} bookmarks into new workspace`, 'success');
 }
 
+// ===== BOOKMARK DRAG → FOLDER (drop-to-move + spring-open) =====
+// Module-level state for an in-flight bookmark drag.
+let _draggedBmId = null;
+const SPRING_OPEN_MS = 700;
+
+function _moveBookmarkToFolder(bmId, targetFolderId) {
+  const d = wsData();
+  const tgt = (d.folders || []).find(f => f.id === targetFolderId);
+  if (!tgt) return false;
+  const bm = (d.importedBookmarks || []).find(b => b.id === bmId);
+  if (!bm) return false;
+  if (bm.folderId === tgt.id) return false;
+  bm.folderId = tgt.id;
+  bm.folderName = tgt.name;
+  save();
+  return true;
+}
+
+// Wire .bm-card dragstart globally so any bookmark drag is observable to folder cards.
+document.addEventListener('dragstart', e => {
+  const card = e.target.closest && e.target.closest('.bm-card');
+  if (!card || !card.dataset.bmid) return;
+  _draggedBmId = card.dataset.bmid;
+  document.body.classList.add('dragging-bookmark');
+});
+document.addEventListener('dragend', () => {
+  _draggedBmId = null;
+  document.body.classList.remove('dragging-bookmark');
+  document.querySelectorAll('.folder-drop-hover').forEach(el => el.classList.remove('folder-drop-hover'));
+});
+
+// Attach drop-target behaviour on every element matching `selector` inside `container`.
+// `selector` elements must carry data-fid (folder id).
+function attachBookmarkDropTargets(container, selector) {
+  container.querySelectorAll(selector).forEach(card => {
+    let springTimer = null;
+    const fid = card.dataset.fid;
+    if (!fid) return;
+    card.addEventListener('dragenter', e => {
+      if (!_draggedBmId) return;
+      e.preventDefault();
+      card.classList.add('folder-drop-hover');
+      if (!springTimer) {
+        springTimer = setTimeout(() => {
+          springTimer = null;
+          // Spring-open: open this folder modal so the user can continue the drag inside.
+          openWsBmFolderModal(fid);
+        }, SPRING_OPEN_MS);
+      }
+    });
+    card.addEventListener('dragover', e => {
+      if (!_draggedBmId) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    card.addEventListener('dragleave', e => {
+      // Only clear when leaving the card itself (not bubbling from children)
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.classList.remove('folder-drop-hover');
+      if (springTimer) { clearTimeout(springTimer); springTimer = null; }
+    });
+    card.addEventListener('drop', e => {
+      if (!_draggedBmId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.remove('folder-drop-hover');
+      if (springTimer) { clearTimeout(springTimer); springTimer = null; }
+      const bmId = _draggedBmId;
+      const moved = _moveBookmarkToFolder(bmId, fid);
+      _draggedBmId = null;
+      document.body.classList.remove('dragging-bookmark');
+      if (moved) {
+        renderWorkspaceBookmarks();
+        renderSidebarFolders();
+        if (_wsFolderModalId) openWsBmFolderModal(_wsFolderModalId);
+        const tgt = getFolderById(fid);
+        if (tgt) showToast(`Moved to “${tgt.name}”`, 'success');
+      }
+    });
+  });
+}
+
 // ===== DRAG REORDER =====
 function initDragReorder(container, itemSelector, onDrop) {
   let dragSrc = null;
   let placeholder = null;
   let didDrop = false;
+  // rAF throttling for dragover — coalesce many ticks into one frame.
+  let rafScheduled = false;
+  let pendingTarget = null;
 
   function getItems() {
     return [...container.querySelectorAll(itemSelector)];
@@ -2139,24 +2602,32 @@ function initDragReorder(container, itemSelector, onDrop) {
     getItems().forEach(el => { el.style.transition = ''; el.style.transform = ''; });
   }
 
-  // FLIP: snapshot positions → move placeholder → animate items to new positions
+  // FLIP move — only forces layout twice per move (once for snapshot, once after insert),
+  // and dragover ticks are coalesced via rAF so this can run at most once per frame.
   function movePlaceholder(newNext) {
-    if (placeholder.nextElementSibling === newNext) return; // already there
-    const snap = new Map(getItems().map(el => [el, el.getBoundingClientRect()]));
+    if (placeholder.nextElementSibling === newNext) return;
+    const items = getItems();
+    const snap = new Map();
+    for (let i = 0; i < items.length; i++) snap.set(items[i], items[i].getBoundingClientRect());
     container.insertBefore(placeholder, newNext);
-    getItems().forEach(el => {
+    for (let i = 0; i < items.length; i++) {
+      const el = items[i];
       const before = snap.get(el);
-      if (!before) return;
+      if (!before) continue;
       const after = el.getBoundingClientRect();
       const dx = before.left - after.left;
       const dy = before.top  - after.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
       el.style.transition = 'none';
       el.style.transform  = `translate(${dx}px,${dy}px)`;
-      requestAnimationFrame(() => {
+    }
+    requestAnimationFrame(() => {
+      for (let i = 0; i < items.length; i++) {
+        const el = items[i];
+        if (!el.style.transform) continue;
         el.style.transition = 'transform 0.16s ease';
         el.style.transform  = '';
-      });
+      }
     });
   }
 
@@ -2202,7 +2673,14 @@ function initDragReorder(container, itemSelector, onDrop) {
     if (!target || target === dragSrc) return;
     const rect = target.getBoundingClientRect();
     const after = e.clientX > rect.left + rect.width / 2;
-    movePlaceholder(after ? target.nextElementSibling : target);
+    pendingTarget = after ? target.nextElementSibling : target;
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(() => {
+      rafScheduled = false;
+      if (placeholder && pendingTarget !== undefined) movePlaceholder(pendingTarget);
+      pendingTarget = null;
+    });
   });
 
   container.addEventListener('drop', e => {
@@ -2267,7 +2745,7 @@ async function loadHistory(q) {
           return `<div class="history-item-wrap">
             <a href="${escH(it.url)}" class="history-item" target="_blank">
               <div class="history-favicon-wrap">
-                <img src="${favSrc(it.url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" alt="">
+                <img loading="lazy" decoding="async" src="${favSrc(it.url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" alt="">
                 <span class="history-favicon-initial" style="display:none">${initial}</span>
               </div>
               <div class="history-item-body">
@@ -2366,7 +2844,7 @@ function renderQuickAccess() {
       <button class="qa-menu-btn" data-qaid="${item.id}" data-tip="Options">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
-      <img class="qa-item-favicon" src="${favSrc(item.url)}" onerror="this.style.display='none'" alt="${escH(item.name)}">
+      <img class="qa-item-favicon" loading="lazy" decoding="async" src="${favSrc(item.url)}" onerror="this.style.display='none'" alt="${escH(item.name)}">
       <span class="qa-item-name">${escH(item.name)}</span>
     </a>`).join('') + `
   <button class="qa-add-btn" id="_qaAddBtn">
@@ -2424,7 +2902,7 @@ function openQAReplaceModal(newItem) {
   const list = el('qaReplaceList');
   list.innerHTML = current.map(q => `
     <button class="qa-replace-row" data-qaid="${q.id}">
-      <img src="${favSrc(q.url)}" width="16" height="16" style="border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">
+      <img loading="lazy" decoding="async" src="${favSrc(q.url)}" width="16" height="16" style="border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">
       <span class="qa-replace-name">${escH(q.name)}</span>
       <span class="qa-replace-url">${escH(getDomain(q.url))}</span>
       <span class="qa-replace-tag">Replace</span>
@@ -2991,7 +3469,7 @@ async function renderAnalytics() {
         sites.slice(0,10).map(s=>`
           <div class="an-row">
             <div style="display:flex;align-items:center;gap:7px;min-width:0">
-              <img src="${favSrc(s.url)}" style="width:14px;height:14px;border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">
+              <img loading="lazy" decoding="async" src="${favSrc(s.url)}" style="width:14px;height:14px;border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">
               <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(s.title||getDomain(s.url))}</span>
             </div>
             <span class="an-muted" style="font-size:11px;flex-shrink:0">${escH(getDomain(s.url))}</span>
@@ -3284,6 +3762,9 @@ function openCmdPalette(prefill) {
   const overlay = el('cmdPaletteOverlay');
   const inp = el('cmdInput');
   overlay.classList.add('open');
+  // Defer the GPU-heavy blur until after the opacity transition has settled
+  // so the open animation runs on the cheap (background-only) compositor.
+  setTimeout(() => { if (overlay.classList.contains('open')) overlay.classList.add('blur-on'); }, 200);
   inp.value = prefill || '';
   _cmdActiveIdx = -1;
   setTimeout(() => inp.focus(), 50);
@@ -3292,7 +3773,9 @@ function openCmdPalette(prefill) {
 }
 
 function closeCmdPalette() {
-  el('cmdPaletteOverlay').classList.remove('open');
+  const overlay = el('cmdPaletteOverlay');
+  overlay.classList.remove('open');
+  overlay.classList.remove('blur-on');
   el('cmdInput').value = '';
   el('cmdResults').innerHTML = '';
   _cmdActiveIdx = -1;
@@ -3343,7 +3826,7 @@ function _renderCmdResults(q) {
     html += `<div class="cmd-section-label">Bookmarks</div>`;
     html += bmMatches.map(bm => `
       <a href="${escH(bm.url)}" class="cmd-result-item" target="_self" data-cmd-item>
-        <div class="cmd-favicon-wrap"><img src="${favSrc(bm.url)}" onerror="this.style.opacity=0" alt=""></div>
+        <div class="cmd-favicon-wrap"><img loading="lazy" decoding="async" src="${favSrc(bm.url)}" onerror="this.style.opacity=0" alt=""></div>
         <div class="cmd-item-body">
           <div class="cmd-item-title">${escH(bm.title||bm.url)}</div>
         </div>
@@ -3558,7 +4041,7 @@ function renderBmForActiveWorkspace() {
           ${bms.map(bm => `
             <div class="bm-item-row">
               <a href="${escH(bm.url)}" class="bm-item" target="_self">
-                <div class="bm-favicon-wrap"><img src="${favSrc(bm.url)}" onerror="this.style.display='none'" alt=""></div>
+                <div class="bm-favicon-wrap"><img loading="lazy" decoding="async" src="${favSrc(bm.url)}" onerror="this.style.display='none'" alt=""></div>
                 <div class="bm-item-text">
                   <span class="bm-item-title">${escH(bm.title || bm.url)}</span>
                   <span class="bm-item-url">${escH(getDomain(bm.url))}</span>
