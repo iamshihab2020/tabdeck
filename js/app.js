@@ -337,6 +337,7 @@ let S = {
   wsData:        {},   // {[wsId]: {quickAccess,notes,tasks}}
   trash:         [],
   settings: {
+    pack:        'default',
     theme:       'dark',
     accentColor: '#7c3aed',
     clockFormat: '12',
@@ -423,6 +424,7 @@ async function loadState() {
     migrated = true;
   }
   if (migrated) save();
+  applyPack(S.settings.pack || 'default');
   applyAccent(S.settings.accentColor);
   applyTheme(S.settings.theme);
   applyCardGlow(S.settings.cardGlow || 'glow');
@@ -1836,8 +1838,15 @@ function openWsBmFolderModal(folderName, items) {
   el('folderModalTitle').textContent = folderName;
   el('folderModalCount').textContent = items.length ? `${items.length} bookmark${items.length !== 1 ? 's' : ''}` : 'Empty';
 
+  let _fmView = 'grid';
+  try { _fmView = localStorage.getItem('__td_fmView') === 'list' ? 'list' : 'grid'; } catch(e){}
+
   const actionsEl = el('folderModalActions');
+  const gridIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`;
+  const listIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>`;
   actionsEl.innerHTML = `
+    <button class="icon-btn" id="_wsFmViewGrid" data-tip="Grid view" style="width:26px;height:26px">${gridIcon}</button>
+    <button class="icon-btn" id="_wsFmViewList" data-tip="List view" style="width:26px;height:26px">${listIcon}</button>
     <button class="btn-primary" id="_wsFmAddBm" style="font-size:12px;padding:5px 10px">+ Add Bookmark</button>
     <button class="icon-btn" id="_wsFmRename" data-tip="Rename folder" style="width:26px;height:26px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -1845,6 +1854,21 @@ function openWsBmFolderModal(folderName, items) {
     <button class="icon-btn" id="_wsFmDelete" data-tip="Delete folder" style="width:26px;height:26px;color:var(--red)">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
     </button>`;
+  const setActiveView = (v) => {
+    actionsEl.querySelector('#_wsFmViewGrid').classList.toggle('active', v === 'grid');
+    actionsEl.querySelector('#_wsFmViewList').classList.toggle('active', v === 'list');
+  };
+  setActiveView(_fmView);
+  actionsEl.querySelector('#_wsFmViewGrid').addEventListener('click', () => {
+    _fmView = 'grid';
+    try { localStorage.setItem('__td_fmView', 'grid'); } catch(e){}
+    setActiveView('grid'); renderItems();
+  });
+  actionsEl.querySelector('#_wsFmViewList').addEventListener('click', () => {
+    _fmView = 'list';
+    try { localStorage.setItem('__td_fmView', 'list'); } catch(e){}
+    setActiveView('list'); renderItems();
+  });
 
   actionsEl.querySelector('#_wsFmAddBm').addEventListener('click', () => {
     closeModal('folderModal');
@@ -1864,25 +1888,49 @@ function openWsBmFolderModal(folderName, items) {
   });
 
   const itemsEl = el('folderModalItems');
-  if (!items.length) {
-    itemsEl.style.display = 'block';
-    itemsEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:20px 0;text-align:center">No bookmarks yet. Click "+ Add Bookmark" above.</div>';
-  } else {
+  function renderItems() {
+    if (!items.length) {
+      itemsEl.style.display = 'block';
+      itemsEl.classList.remove('fm-list');
+      itemsEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:20px 0;text-align:center">No bookmarks yet. Click "+ Add Bookmark" above.</div>';
+      return;
+    }
     itemsEl.style.display = '';
-    itemsEl.innerHTML = items.map(bm => {
-      const letter = (bm.title || getDomain(bm.url) || '?')[0].toUpperCase();
-      return `
-      <a class="bm-card" href="${escH(bm.url)}" target="_self" data-bmid="${escH(bm.id)}" draggable="true">
-        <button class="bm-card-menu" data-bmid="${escH(bm.id)}" data-tip="Options">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-        </button>
-        <div class="bm-card-icon" data-letter="${escH(letter)}">
-          <img src="${favSrc(bm.url)}" onerror="this.style.display='none';this.parentNode.classList.add('bm-icon-fallback')" alt="">
-        </div>
-        <div class="bm-card-name">${escH(bm.title || getDomain(bm.url))}</div>
-        <div class="bm-card-domain">${escH(getDomain(bm.url))}</div>
-      </a>`;
-    }).join('');
+    itemsEl.classList.toggle('fm-list', _fmView === 'list');
+    if (_fmView === 'list') {
+      itemsEl.innerHTML = items.map(bm => {
+        const name = bm.title || getDomain(bm.url);
+        return `
+        <div class="bm-list-row" data-bmid="${escH(bm.id)}" draggable="true">
+          <a class="bm-list-link" href="${escH(bm.url)}" target="_self">
+            <img class="bm-list-favicon" src="${favSrc(bm.url)}" onerror="this.style.visibility='hidden'" alt="">
+            <div class="bm-list-info">
+              <span class="bm-list-name">${escH(name)}</span>
+              <span class="bm-list-domain">${escH(getDomain(bm.url))}</span>
+            </div>
+          </a>
+          <button class="bm-card-menu bm-list-menu" data-bmid="${escH(bm.id)}" data-tip="Options">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+          </button>
+        </div>`;
+      }).join('');
+    } else {
+      itemsEl.innerHTML = items.map(bm => {
+        const letter = (bm.title || getDomain(bm.url) || '?')[0].toUpperCase();
+        const name = bm.title || getDomain(bm.url);
+        return `
+        <a class="bm-card" href="${escH(bm.url)}" target="_self" data-bmid="${escH(bm.id)}" draggable="true" data-tip="${escH(name)}">
+          <button class="bm-card-menu" data-bmid="${escH(bm.id)}" data-tip="Options">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+          </button>
+          <div class="bm-card-icon" data-letter="${escH(letter)}">
+            <img src="${favSrc(bm.url)}" onerror="this.style.display='none';this.parentNode.classList.add('bm-icon-fallback')" alt="">
+          </div>
+          <div class="bm-card-name">${escH(name)}</div>
+          <div class="bm-card-domain">${escH(getDomain(bm.url))}</div>
+        </a>`;
+      }).join('');
+    }
     itemsEl.querySelectorAll('.bm-card-menu').forEach(btn => {
       btn.addEventListener('click', e => {
         e.preventDefault();
@@ -1891,10 +1939,10 @@ function openWsBmFolderModal(folderName, items) {
         if (bm) openBmCtxMenu(btn, bm, folderName);
       });
     });
-    initDragReorder(itemsEl, '.bm-card', () => {
-      const newIds = [...itemsEl.querySelectorAll('.bm-card')].map(el => el.dataset.bmid);
+    const rowSel = _fmView === 'list' ? '.bm-list-row' : '.bm-card';
+    initDragReorder(itemsEl, rowSel, () => {
+      const newIds = [...itemsEl.querySelectorAll(rowSel)].map(el => el.dataset.bmid);
       const d = wsData();
-      // Replace this folder's bookmarks in-place within the flat array
       const folderIndices = d.importedBookmarks.reduce((acc, b, i) => {
         if ((b.folderName || 'Other') === folderName) acc.push(i);
         return acc;
@@ -1904,6 +1952,7 @@ function openWsBmFolderModal(folderName, items) {
       save();
     });
   }
+  renderItems();
   openModal('folderModal');
 }
 
@@ -3133,6 +3182,46 @@ function applyAccent(color) {
   document.documentElement.style.setProperty('--accent-glow',   color+'80');
   try { localStorage.setItem('__td_accent', color); } catch(e) {}
 }
+function applyPack(pack) {
+  if (pack !== 'brutal' && pack !== 'atelier' && pack !== 'holodeck' && pack !== 'mono') pack = 'default';
+  S.settings.pack = pack;
+  document.documentElement.dataset.pack = pack;
+  const link = document.getElementById('theme-pack-css');
+  const href = 'css/themes/' + pack + '.css';
+  if (link && link.getAttribute('href') !== href) link.setAttribute('href', href);
+  try { localStorage.setItem('__td_pack', pack); } catch(e) {}
+  // Re-apply mode + accent so the new pack inherits current state.
+  applyTheme(S.settings.theme || 'dark');
+  if (pack === 'brutal') {
+    // Brutal owns its accent — strip inline overrides so the pack's CSS wins.
+    ['--accent','--accent-light','--accent-bg','--accent-subtle','--accent-glow'].forEach(p => {
+      document.documentElement.style.removeProperty(p);
+    });
+  } else {
+    applyAccent(S.settings.accentColor || '#7c3aed');
+  }
+  // Mono has no glow — force off regardless of stored setting.
+  applyCardGlow(pack === 'mono' ? 'off' : (S.settings.cardGlow || 'glow'));
+  // Update picker UI active state.
+  document.querySelectorAll('#packPicker .pack-card').forEach(b => {
+    b.classList.toggle('active', b.dataset.pack === pack);
+  });
+  // Lock pack-incompatible settings.
+  const accentLocked = pack === 'brutal';
+  const glowLocked = pack === 'mono';
+  const accentRow = document.getElementById('accentColorRow');
+  if (accentRow) {
+    accentRow.classList.toggle('row-locked', accentLocked);
+    const msg = accentRow.querySelector('.settings-row-locked-msg');
+    if (msg) msg.style.display = accentLocked ? '' : 'none';
+  }
+  const glowRow = document.getElementById('cardGlowRow');
+  if (glowRow) {
+    glowRow.classList.toggle('row-locked', glowLocked);
+    const msg = glowRow.querySelector('.settings-row-locked-msg');
+    if (msg) msg.style.display = glowLocked ? '' : 'none';
+  }
+}
 function applyCardGlow(mode) {
   document.documentElement.dataset.cardGlow = mode || 'glow';
 }
@@ -3568,6 +3657,14 @@ function setupEventListeners() {
   el('settingsOverlay').addEventListener('click', closeSettings);
   el('saveSettingsBtn').addEventListener('click', saveSettings);
 
+  // Theme pack picker
+  document.querySelectorAll('#packPicker .pack-card').forEach(b => {
+    b.addEventListener('click', () => {
+      applyPack(b.dataset.pack);
+      save();
+    });
+  });
+
   // Settings theme toggles
   el('darkThemeBtn').addEventListener('click', () => {
     applyTheme('dark');
@@ -3606,6 +3703,7 @@ function setupEventListeners() {
   // Card glow toggle
   document.querySelectorAll('#cardGlowGroup .toggle-opt').forEach(b => {
     b.addEventListener('click', () => {
+      if (document.getElementById('cardGlowRow')?.classList.contains('row-locked')) return;
       document.querySelectorAll('#cardGlowGroup .toggle-opt').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
       S.settings.cardGlow = b.dataset.glow;
@@ -3617,6 +3715,7 @@ function setupEventListeners() {
   // Accent colors
   document.querySelectorAll('#accentColors .color-swatch').forEach(s => {
     s.addEventListener('click', () => {
+      if (document.getElementById('accentColorRow')?.classList.contains('row-locked')) return;
       document.querySelectorAll('#accentColors .color-swatch').forEach(x=>x.classList.remove('active'));
       s.classList.add('active');
       applyAccent(s.dataset.color);
@@ -3688,9 +3787,10 @@ function setupEventListeners() {
       S.weatherLocation = null;
       S.workspaces.forEach(ws => S.wsData[ws.id] = DEFAULT_WS_DATA(ws.id));
       S.trash = [];
-      S.settings = { theme:'dark', accentColor:'#7c3aed', clockFormat:'12', showSeconds:true, cardGlow:'glow', widgets:{notes:true,tasks:true,quote:true,timer:true} };
+      S.settings = { pack:'default', theme:'dark', accentColor:'#7c3aed', clockFormat:'12', showSeconds:true, cardGlow:'glow', widgets:{notes:true,tasks:true,quote:true,timer:true} };
       save();
       renderAll();
+      applyPack('default');
       applyTheme('dark');
       applyAccent('#7c3aed');
       applyCardGlow('glow');
