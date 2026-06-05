@@ -25,7 +25,8 @@
     "storage",
     "topSites",
     "identity",
-    "identity.email"
+    "identity.email",
+    "geolocation"
   ],
   "host_permissions": [
     "https://wttr.in/*",

@@ -1,0 +1,397 @@
+/* TabDeck — SAKURA theme pack
+   Japanese spring: soft cherry blossom, clean white paper, rose-pink accent.
+   Light default "Morning", dark alt "Night Garden". Manrope body. */
+
+@import url('default.css');
+
+/* ===== Variables — "Morning" (light default) ===== */
+:root,
+[data-pack="sakura"]:root,
+[data-pack="sakura"] {
+  --bg-body:        #fdf5f8;
+  --bg-sidebar:     #fae8f0;
+  --bg-modal:       #ffffff;
+  --bg-card:        rgba(255,255,255,0.92);
+  --bg-card-hover:  rgba(255,255,255,1);
+  --bg-input:       rgba(0,0,0,0.04);
+  --accent:         #db2777;
+  --accent-light:   #ec4899;
+  --accent-bg:      rgba(219,39,119,0.10);
+  --accent-subtle:  rgba(219,39,119,0.05);
+  --accent-glow:    rgba(219,39,119,0.25);
+  --green:          #65a30d;
+  --orange:         #d97706;
+  --red:            #dc2626;
+  --text-primary:   #1e0a14;
+  --text-secondary: #8b4063;
+  --text-muted:     #c08090;
+  --border:         rgba(219,39,119,0.12);
+  --border-hover:   rgba(219,39,119,0.30);
+  --radius:         16px;
+  --radius-sm:      10px;
+  --shadow:         0 4px 24px rgba(219,39,119,0.08), 0 1px 0 rgba(219,39,119,0.06);
+  --transition:     0.22s cubic-bezier(.4,0,.2,1);
+}
+
+/* ===== Variables — "Night Garden" (dark alt) ===== */
+[data-pack="sakura"][data-theme="dark"],
+[data-pack="sakura"][data-theme="dark"]:root,
+html[data-pack="sakura"][data-theme="dark"] {
+  --bg-body:        #110a0e;
+  --bg-sidebar:     #0e0810;
+  --bg-modal:       #1c1018;
+  --bg-card:        rgba(236,72,153,0.05);
+  --bg-card-hover:  rgba(236,72,153,0.09);
+  --bg-input:       rgba(236,72,153,0.06);
+  --accent:         #f472b6;
+  --accent-light:   #f9a8d4;
+  --accent-bg:      rgba(244,114,182,0.14);
+  --accent-subtle:  rgba(244,114,182,0.06);
+  --accent-glow:    rgba(244,114,182,0.45);
+  --text-primary:   #fdf0f5;
+  --text-secondary: #c06080;
+  --text-muted:     #5a3045;
+  --border:         rgba(244,114,182,0.11);
+  --border-hover:   rgba(244,114,182,0.28);
+  --shadow:         0 4px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(244,114,182,0.06);
+}
+
+/* ===== Sakura petal atmosphere ===== */
+[data-pack="sakura"] body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.006em;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -5%,  rgba(236,72,153,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 95% 80%,  rgba(251,207,232,0.20) 0%, transparent 45%),
+    radial-gradient(ellipse 40% 30% at 5%  80%,  rgba(253,224,244,0.15) 0%, transparent 45%),
+    var(--bg-body);
+}
+[data-pack="sakura"][data-theme="dark"] body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -5%,  rgba(244,114,182,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 90% 100%, rgba(244,114,182,0.05) 0%, transparent 50%),
+    var(--bg-body);
+}
+
+/* ===== SIDEBAR ===== */
+[data-pack="sakura"] .sidebar {
+  background: var(--bg-sidebar);
+  border-right: 1px solid rgba(219,39,119,0.12);
+}
+[data-pack="sakura"][data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #10090e 0%, #0c0709 100%);
+  border-right: 1px solid rgba(244,114,182,0.09);
+}
+[data-pack="sakura"] .logo {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  border-bottom: 1px solid rgba(219,39,119,0.12);
+}
+[data-pack="sakura"][data-theme="dark"] .logo {
+  border-bottom-color: rgba(244,114,182,0.09);
+}
+[data-pack="sakura"] .logo-icon { color: #db2777; }
+[data-pack="sakura"][data-theme="dark"] .logo-icon {
+  color: #f472b6;
+  filter: drop-shadow(0 0 8px rgba(244,114,182,0.70));
+}
+[data-pack="sakura"] .nav-item { border-left: 2px solid transparent; }
+[data-pack="sakura"] .nav-item:hover {
+  background: rgba(219,39,119,0.07);
+  border-left-color: rgba(219,39,119,0.35);
+  color: #db2777;
+}
+[data-pack="sakura"][data-theme="dark"] .nav-item:hover {
+  background: rgba(244,114,182,0.07);
+  border-left-color: rgba(244,114,182,0.35);
+  color: #f472b6;
+}
+[data-pack="sakura"] .nav-item.active {
+  background: rgba(219,39,119,0.10);
+  color: #db2777;
+  border-left: 2px solid #db2777;
+}
+[data-pack="sakura"][data-theme="dark"] .nav-item.active {
+  background: linear-gradient(90deg, rgba(244,114,182,0.14), rgba(244,114,182,0.03));
+  color: #f472b6;
+  border-left: 2px solid #f472b6;
+}
+[data-pack="sakura"] .workspace-sidebar-item.active {
+  background: rgba(219,39,119,0.10);
+  color: #db2777;
+  border-left: 2px solid #db2777;
+}
+[data-pack="sakura"][data-theme="dark"] .workspace-sidebar-item.active {
+  background: rgba(244,114,182,0.12);
+  color: #f472b6;
+  border-left: 2px solid #f472b6;
+}
+[data-pack="sakura"] .section-header { color: #db2777; font-size: 10px; letter-spacing: 0.12em; opacity: 0.7; }
+[data-pack="sakura"][data-theme="dark"] .section-header { color: #f472b6; }
+[data-pack="sakura"] .icon-btn {
+  background: rgba(219,39,119,0.08);
+  color: #db2777;
+  border: 1px solid rgba(219,39,119,0.14);
+}
+[data-pack="sakura"][data-theme="dark"] .icon-btn {
+  background: rgba(244,114,182,0.08);
+  color: #f472b6;
+  border: 1px solid rgba(244,114,182,0.14);
+}
+[data-pack="sakura"] .icon-btn:hover { background: rgba(219,39,119,0.16); }
+[data-pack="sakura"][data-theme="dark"] .icon-btn:hover { background: rgba(244,114,182,0.16); }
+[data-pack="sakura"] .sidebar-folder-count {
+  background: rgba(219,39,119,0.09);
+  color: #db2777;
+}
+[data-pack="sakura"][data-theme="dark"] .sidebar-folder-count {
+  background: rgba(244,114,182,0.10);
+  color: #f472b6;
+}
+[data-pack="sakura"] .sidebar-footer { border-top: 1px solid rgba(219,39,119,0.12); }
+[data-pack="sakura"][data-theme="dark"] .sidebar-footer {
+  background: rgba(10,6,9,0.9);
+  border-top: 1px solid rgba(244,114,182,0.08);
+}
+[data-pack="sakura"] .footer-btn {
+  background: rgba(219,39,119,0.06);
+  border: 1px solid rgba(219,39,119,0.10);
+  color: #8b4063;
+}
+[data-pack="sakura"] .footer-btn:hover { background: rgba(219,39,119,0.13); color: #db2777; }
+[data-pack="sakura"][data-theme="dark"] .footer-btn {
+  background: rgba(244,114,182,0.06);
+  border: 1px solid rgba(244,114,182,0.09);
+  color: #c06080;
+}
+[data-pack="sakura"][data-theme="dark"] .footer-btn:hover { background: rgba(244,114,182,0.13); color: #f472b6; }
+
+/* Sync card */
+[data-pack="sakura"] .sync-card {
+  background: linear-gradient(135deg, rgba(219,39,119,0.08), rgba(251,207,232,0.15));
+  border: 1px solid rgba(219,39,119,0.16);
+}
+[data-pack="sakura"][data-theme="dark"] .sync-card {
+  background: linear-gradient(135deg, rgba(244,114,182,0.10), rgba(219,39,119,0.06));
+  border: 1px solid rgba(244,114,182,0.18);
+}
+[data-pack="sakura"] .sync-icon { background: linear-gradient(135deg, #db2777, #f472b6); color: white; }
+[data-pack="sakura"] .sign-in-btn {
+  background: linear-gradient(135deg, #db2777, #f472b6);
+  color: white;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 16px rgba(219,39,119,0.30);
+}
+[data-pack="sakura"] .sign-in-btn:hover { box-shadow: 0 6px 24px rgba(219,39,119,0.45); transform: translateY(-1px); }
+[data-pack="sakura"] .sign-in-btn.signed-in {
+  background: rgba(219,39,119,0.10);
+  color: #db2777;
+  border: 1px solid rgba(219,39,119,0.25);
+  box-shadow: none;
+}
+
+/* ===== TOPBAR ===== */
+[data-pack="sakura"] .topbar {
+  background: rgba(253,245,248,0.90);
+  border-bottom: 1px solid rgba(219,39,119,0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-pack="sakura"][data-theme="dark"] .topbar {
+  background: rgba(11,7,10,0.88);
+  border-bottom: 1px solid rgba(244,114,182,0.07);
+  backdrop-filter: blur(16px);
+}
+[data-pack="sakura"] .search-trigger {
+  background: rgba(219,39,119,0.05);
+  border: 1px solid rgba(219,39,119,0.12);
+}
+[data-pack="sakura"] .search-trigger:hover {
+  border-color: rgba(219,39,119,0.26);
+  background: rgba(219,39,119,0.08);
+}
+[data-pack="sakura"][data-theme="dark"] .search-trigger {
+  background: rgba(244,114,182,0.05);
+  border: 1px solid rgba(244,114,182,0.11);
+}
+[data-pack="sakura"] .topbar-btn {
+  background: rgba(219,39,119,0.06);
+  border: 1px solid rgba(219,39,119,0.10);
+  color: #8b4063;
+}
+[data-pack="sakura"] .topbar-btn:hover { background: rgba(219,39,119,0.12); color: #db2777; }
+[data-pack="sakura"] .topbar-btn.active {
+  background: rgba(219,39,119,0.14);
+  color: #db2777;
+  border-color: rgba(219,39,119,0.28);
+}
+[data-pack="sakura"][data-theme="dark"] .topbar-btn {
+  background: rgba(244,114,182,0.06);
+  border: 1px solid rgba(244,114,182,0.09);
+  color: #c06080;
+}
+[data-pack="sakura"][data-theme="dark"] .topbar-btn:hover { background: rgba(244,114,182,0.13); color: #f472b6; }
+[data-pack="sakura"] .avatar { background: linear-gradient(135deg, #db2777, #f472b6); color: white; }
+
+/* ===== CARDS / WIDGETS ===== */
+[data-pack="sakura"] .widget,
+[data-pack="sakura"] .folder-card,
+[data-pack="sakura"] .qa-item {
+  background: var(--bg-card);
+  border: 1px solid rgba(219,39,119,0.10);
+  box-shadow: 0 2px 18px rgba(219,39,119,0.06), 0 1px 0 rgba(219,39,119,0.04);
+}
+[data-pack="sakura"] .widget:hover,
+[data-pack="sakura"] .folder-card:hover {
+  border-color: rgba(219,39,119,0.22);
+  box-shadow: 0 6px 28px rgba(219,39,119,0.10);
+  transform: translateY(-1px);
+}
+[data-pack="sakura"] .qa-item:hover {
+  border-color: rgba(219,39,119,0.22);
+  box-shadow: 0 4px 18px rgba(219,39,119,0.10);
+}
+[data-pack="sakura"][data-theme="dark"] .widget,
+[data-pack="sakura"][data-theme="dark"] .folder-card,
+[data-pack="sakura"][data-theme="dark"] .qa-item {
+  background: linear-gradient(135deg, rgba(244,114,182,0.06) 0%, rgba(17,10,14,0) 65%);
+  border: 1px solid rgba(244,114,182,0.10);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(244,114,182,0.06);
+}
+[data-pack="sakura"][data-theme="dark"] .widget:hover,
+[data-pack="sakura"][data-theme="dark"] .folder-card:hover {
+  border-color: rgba(244,114,182,0.22);
+  transform: translateY(-1px);
+}
+
+[data-pack="sakura"] .folder-card-icon { background: rgba(219,39,119,0.08) !important; }
+[data-pack="sakura"][data-theme="dark"] .folder-card-icon { background: rgba(244,114,182,0.10) !important; }
+
+/* ===== BUTTONS ===== */
+[data-pack="sakura"] .btn-primary {
+  background: linear-gradient(135deg, #db2777, #f472b6);
+  color: white;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 18px rgba(219,39,119,0.28);
+}
+[data-pack="sakura"] .btn-primary:hover { box-shadow: 0 6px 26px rgba(219,39,119,0.40); transform: translateY(-1px); }
+[data-pack="sakura"] .btn-secondary {
+  background: rgba(219,39,119,0.07);
+  border: 1px solid rgba(219,39,119,0.18);
+  color: #db2777;
+}
+[data-pack="sakura"] .btn-secondary:hover { background: rgba(219,39,119,0.13); }
+
+/* ===== TOGGLE GROUP ===== */
+[data-pack="sakura"] .toggle-group {
+  background: rgba(219,39,119,0.05);
+  border: 1px solid rgba(219,39,119,0.14);
+}
+[data-pack="sakura"] .toggle-opt.active {
+  background: rgba(219,39,119,0.16);
+  color: #db2777;
+}
+[data-pack="sakura"][data-theme="dark"] .toggle-opt.active {
+  background: rgba(244,114,182,0.18);
+  color: #f472b6;
+}
+
+/* ===== MODALS ===== */
+[data-pack="sakura"] .modal-overlay { background: rgba(30,10,20,0.55); backdrop-filter: blur(4px); }
+[data-pack="sakura"][data-theme="dark"] .modal-overlay { background: rgba(5,2,4,0.78); }
+[data-pack="sakura"] .modal {
+  background: #fff;
+  border: 1px solid rgba(219,39,119,0.14);
+  box-shadow: 0 8px 60px rgba(219,39,119,0.10);
+}
+[data-pack="sakura"][data-theme="dark"] .modal {
+  background: #1c1018;
+  border: 1px solid rgba(244,114,182,0.14);
+  box-shadow: 0 8px 60px rgba(0,0,0,0.75);
+}
+
+/* ===== SETTINGS PANEL ===== */
+[data-pack="sakura"] .settings-panel {
+  background: #fdf5f8;
+  border-left: 1px solid rgba(219,39,119,0.12);
+  box-shadow: -6px 0 32px rgba(219,39,119,0.08);
+}
+[data-pack="sakura"][data-theme="dark"] .settings-panel {
+  background: #130910;
+  border-left: 1px solid rgba(244,114,182,0.10);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.60);
+}
+[data-pack="sakura"] .settings-section-title { color: #db2777; font-weight: 700; letter-spacing: 0.08em; font-size: 10.5px; }
+[data-pack="sakura"][data-theme="dark"] .settings-section-title { color: #f472b6; }
+
+/* ===== COMMAND PALETTE ===== */
+[data-pack="sakura"] #cmdPaletteOverlay { background: rgba(30,10,20,0.60); backdrop-filter: blur(6px); }
+[data-pack="sakura"][data-theme="dark"] #cmdPaletteOverlay { background: rgba(5,2,4,0.80); }
+[data-pack="sakura"] #cmdPalette {
+  background: #fff;
+  border: 1px solid rgba(219,39,119,0.18);
+  box-shadow: 0 8px 60px rgba(219,39,119,0.12);
+}
+[data-pack="sakura"][data-theme="dark"] #cmdPalette {
+  background: #180c14;
+  border: 1px solid rgba(244,114,182,0.16);
+  box-shadow: 0 8px 60px rgba(0,0,0,0.85);
+}
+[data-pack="sakura"] .cmd-input { caret-color: #db2777; color: #1e0a14; }
+[data-pack="sakura"] .cmd-input::placeholder { color: #c08090; }
+[data-pack="sakura"][data-theme="dark"] .cmd-input { caret-color: #f472b6; color: #fdf0f5; }
+[data-pack="sakura"] .cmd-search-icon { color: #db2777; }
+[data-pack="sakura"][data-theme="dark"] .cmd-search-icon { color: #f472b6; }
+
+/* ===== SCROLLBAR ===== */
+[data-pack="sakura"] ::-webkit-scrollbar-thumb { background: rgba(219,39,119,0.18); }
+[data-pack="sakura"] ::-webkit-scrollbar-thumb:hover { background: rgba(219,39,119,0.32); }
+[data-pack="sakura"][data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(244,114,182,0.18); }
+
+/* ===== TAGS ===== */
+[data-pack="sakura"] .tag-chip {
+  background: rgba(219,39,119,0.08);
+  color: #db2777;
+  border: 1px solid rgba(219,39,119,0.16);
+}
+[data-pack="sakura"][data-theme="dark"] .tag-chip {
+  background: rgba(244,114,182,0.10);
+  color: #f472b6;
+  border: 1px solid rgba(244,114,182,0.18);
+}
+
+/* ===== PACK PICKER ===== */
+[data-pack="sakura"] .pack-card {
+  background: rgba(219,39,119,0.04);
+  border: 1px solid rgba(219,39,119,0.12);
+}
+[data-pack="sakura"] .pack-card:hover { border-color: rgba(219,39,119,0.24); background: rgba(219,39,119,0.08); }
+[data-pack="sakura"] .pack-card.active {
+  border-color: #db2777;
+  background: rgba(219,39,119,0.10);
+  color: #db2777;
+  box-shadow: 0 0 0 2px rgba(219,39,119,0.13);
+}
+[data-pack="sakura"][data-theme="dark"] .pack-card.active {
+  border-color: #f472b6;
+  color: #f472b6;
+}
+
+/* ===== HERO greeting ===== */
+[data-pack="sakura"] .greet-text {
+  color: #db2777;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+}
+[data-pack="sakura"][data-theme="dark"] .greet-text {
+  background: linear-gradient(135deg, #fdf0f5, #f9a8d4 40%, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 18px rgba(244,114,182,0.30));
+  font-style: normal;
+}

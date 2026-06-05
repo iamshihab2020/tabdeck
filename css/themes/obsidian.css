@@ -1,0 +1,522 @@
+/* TabDeck — OBSIDIAN theme pack
+   Premium black glass: near-void dark, frosted glossy surfaces,
+   specular white highlights, electric accent.
+   Every surface has a diagonal gloss sheen — like wet obsidian stone.
+   Plus Jakarta Sans · DM Mono for mono spans. */
+
+@import url('default.css');
+
+/* ===== Variables — "Midnight Glass" (dark default) ===== */
+:root,
+[data-pack="obsidian"]:root,
+[data-pack="obsidian"] {
+  --bg-body:        #050507;
+  --bg-sidebar:     #060608;
+  --bg-modal:       #0e0e12;
+  --bg-card:        rgba(255,255,255,0.04);
+  --bg-card-hover:  rgba(255,255,255,0.07);
+  --bg-input:       rgba(255,255,255,0.05);
+  --accent:         #38bdf8;
+  --accent-light:   #7dd3fc;
+  --accent-bg:      rgba(56,189,248,0.12);
+  --accent-subtle:  rgba(56,189,248,0.06);
+  --accent-glow:    rgba(56,189,248,0.45);
+  --green:          #34d399;
+  --orange:         #fb923c;
+  --red:            #f87171;
+  --text-primary:   #f0f0f4;
+  --text-secondary: #8888a0;
+  --text-muted:     #44445a;
+  --border:         rgba(255,255,255,0.08);
+  --border-hover:   rgba(255,255,255,0.18);
+  --radius:         16px;
+  --radius-sm:      10px;
+  --shadow:         0 8px 40px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.06) inset;
+  --transition:     0.22s cubic-bezier(.4,0,.2,1);
+  --gloss-hi:       rgba(255,255,255,0.13);
+  --gloss-mid:      rgba(255,255,255,0.05);
+}
+
+/* ===== Variables — "Pearl" (light alt) ===== */
+[data-pack="obsidian"][data-theme="light"],
+[data-pack="obsidian"][data-theme="light"]:root,
+html[data-pack="obsidian"][data-theme="light"] {
+  --bg-body:        #f0f1f5;
+  --bg-sidebar:     #e8eaf0;
+  --bg-modal:       #ffffff;
+  --bg-card:        rgba(255,255,255,0.82);
+  --bg-card-hover:  rgba(255,255,255,0.98);
+  --bg-input:       rgba(0,0,0,0.04);
+  --accent:         #0284c7;
+  --accent-light:   #0ea5e9;
+  --accent-bg:      rgba(2,132,199,0.10);
+  --accent-subtle:  rgba(2,132,199,0.05);
+  --accent-glow:    rgba(2,132,199,0.25);
+  --text-primary:   #0a0a14;
+  --text-secondary: #4a4a64;
+  --text-muted:     #9090a8;
+  --border:         rgba(0,0,0,0.08);
+  --border-hover:   rgba(0,0,0,0.16);
+  --shadow:         0 4px 24px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.9) inset;
+  --gloss-hi:       rgba(255,255,255,0.70);
+  --gloss-mid:      rgba(255,255,255,0.30);
+}
+
+/* ===== Typography + body ===== */
+[data-pack="obsidian"] body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.012em;
+  background:
+    radial-gradient(ellipse 100% 40% at 50% 0%,   rgba(56,189,248,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60%  60% at 100% 100%, rgba(148,163,184,0.03) 0%, transparent 55%),
+    var(--bg-body);
+}
+[data-pack="obsidian"][data-theme="light"] body {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% -5%, rgba(56,189,248,0.08) 0%, transparent 55%),
+    var(--bg-body);
+}
+
+/* ===== Core gloss mixin — applied broadly ===== */
+/* A diagonal specular sheen: bright top-left fading to transparent,
+   plus an inset top-edge highlight line for the "wet glass" look. */
+
+/* ===== SIDEBAR ===== */
+[data-pack="obsidian"] .sidebar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 40%),
+    #07070a;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 1px 0 0 rgba(255,255,255,0.04);
+}
+[data-pack="obsidian"][data-theme="light"] .sidebar {
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+}
+[data-pack="obsidian"] .logo {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+[data-pack="obsidian"] .logo-icon {
+  color: #38bdf8;
+  filter: drop-shadow(0 0 12px rgba(56,189,248,0.9));
+}
+[data-pack="obsidian"] .nav-item {
+  border-left: 2px solid transparent;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+}
+[data-pack="obsidian"] .nav-item:hover {
+  background: rgba(255,255,255,0.05);
+  border-left-color: rgba(56,189,248,0.4);
+  color: #e0f2fe;
+}
+[data-pack="obsidian"] .nav-item.active {
+  background: linear-gradient(90deg, rgba(56,189,248,0.14), rgba(56,189,248,0.02));
+  border-left: 2px solid #38bdf8;
+  color: #38bdf8;
+  box-shadow: inset 0 0 20px rgba(56,189,248,0.05);
+}
+[data-pack="obsidian"] .workspace-sidebar-item.active {
+  background: rgba(56,189,248,0.10);
+  color: #38bdf8;
+  border-left: 2px solid #38bdf8;
+}
+[data-pack="obsidian"] .nav-item:hover,
+[data-pack="obsidian"] .workspace-sidebar-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+[data-pack="obsidian"] .section-header {
+  color: #38bdf8;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  opacity: 0.6;
+}
+[data-pack="obsidian"] .icon-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: #8888a0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+}
+[data-pack="obsidian"] .icon-btn:hover {
+  background: rgba(56,189,248,0.12);
+  color: #38bdf8;
+  border-color: rgba(56,189,248,0.20);
+}
+[data-pack="obsidian"] .sidebar-folder-count {
+  background: rgba(56,189,248,0.10);
+  color: #38bdf8;
+  font-weight: 700;
+}
+[data-pack="obsidian"] .sidebar-footer {
+  background:
+    linear-gradient(0deg, rgba(255,255,255,0.015) 0%, transparent 100%),
+    rgba(5,5,7,0.95);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(8px);
+}
+[data-pack="obsidian"] .footer-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #8888a0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-pack="obsidian"] .footer-btn:hover {
+  background: rgba(56,189,248,0.10);
+  color: #38bdf8;
+  border-color: rgba(56,189,248,0.18);
+}
+
+/* Sync card */
+[data-pack="obsidian"] .sync-card {
+  background:
+    linear-gradient(155deg, rgba(56,189,248,0.10) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(56,189,248,0.16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+[data-pack="obsidian"] .sync-icon {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #050507;
+  box-shadow: 0 4px 12px rgba(56,189,248,0.35);
+}
+[data-pack="obsidian"] .sign-in-btn {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  color: #050507;
+  font-weight: 700;
+  border: none;
+  letter-spacing: -0.01em;
+  box-shadow: 0 4px 20px rgba(56,189,248,0.35), inset 0 1px 0 rgba(255,255,255,0.30);
+}
+[data-pack="obsidian"] .sign-in-btn:hover {
+  box-shadow: 0 6px 28px rgba(56,189,248,0.50), inset 0 1px 0 rgba(255,255,255,0.30);
+  transform: translateY(-1px);
+}
+[data-pack="obsidian"] .sign-in-btn.signed-in {
+  background: rgba(56,189,248,0.10);
+  color: #38bdf8;
+  border: 1px solid rgba(56,189,248,0.22);
+  box-shadow: none;
+}
+
+/* ===== TOPBAR — glossy frosted bar ===== */
+[data-pack="obsidian"] .topbar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%),
+    rgba(6,6,8,0.88);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.4);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+}
+[data-pack="obsidian"][data-theme="light"] .topbar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,241,245,0.90) 100%);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 1px 0 rgba(255,255,255,1), 0 4px 20px rgba(0,0,0,0.08);
+  backdrop-filter: blur(12px);
+}
+[data-pack="obsidian"] .search-trigger {
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 50%, rgba(0,0,0,0) 100%),
+    rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 2px 8px rgba(0,0,0,0.3);
+}
+[data-pack="obsidian"] .search-trigger:hover {
+  border-color: rgba(56,189,248,0.25);
+  background:
+    linear-gradient(155deg, rgba(56,189,248,0.08) 0%, rgba(255,255,255,0.02) 50%, rgba(0,0,0,0) 100%),
+    rgba(255,255,255,0.05);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 16px rgba(56,189,248,0.08);
+}
+[data-pack="obsidian"] .topbar-btn {
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #8888a0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+[data-pack="obsidian"] .topbar-btn:hover {
+  background:
+    linear-gradient(155deg, rgba(56,189,248,0.12) 0%, rgba(56,189,248,0.03) 100%);
+  color: #38bdf8;
+  border-color: rgba(56,189,248,0.20);
+}
+[data-pack="obsidian"] .topbar-btn.active {
+  background:
+    linear-gradient(155deg, rgba(56,189,248,0.18) 0%, rgba(56,189,248,0.06) 100%);
+  color: #38bdf8;
+  border-color: rgba(56,189,248,0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 14px rgba(56,189,248,0.14);
+}
+[data-pack="obsidian"] .avatar {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: #050507;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(56,189,248,0.35);
+}
+
+/* ===== CARDS / WIDGETS / QUICK ACCESS — the glossy core ===== */
+[data-pack="obsidian"] .widget,
+[data-pack="obsidian"] .folder-card,
+[data-pack="obsidian"] .qa-item {
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255,255,255,0.13) 0%,
+      rgba(255,255,255,0.05) 25%,
+      rgba(0,0,0,0.0)        65%
+    ),
+    rgba(14,14,18,0.75);
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 1px 0 rgba(0,0,0,0.4),
+    0 8px 32px rgba(0,0,0,0.45);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+}
+[data-pack="obsidian"] .widget:hover,
+[data-pack="obsidian"] .folder-card:hover {
+  border-color: rgba(255,255,255,0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 1px 0 rgba(0,0,0,0.4),
+    0 12px 44px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(56,189,248,0.08);
+  transform: translateY(-2px);
+}
+[data-pack="obsidian"] .qa-item:hover {
+  border-color: rgba(255,255,255,0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 8px 24px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(56,189,248,0.08);
+}
+[data-pack="obsidian"][data-theme="light"] .widget,
+[data-pack="obsidian"][data-theme="light"] .folder-card,
+[data-pack="obsidian"][data-theme="light"] .qa-item {
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255,255,255,0.90) 0%,
+      rgba(255,255,255,0.65) 50%,
+      rgba(240,241,245,0.55) 100%
+    );
+  border: 1px solid rgba(0,0,0,0.07);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,1), 0 4px 20px rgba(0,0,0,0.08);
+  backdrop-filter: blur(10px);
+}
+[data-pack="obsidian"][data-theme="light"] .widget:hover,
+[data-pack="obsidian"][data-theme="light"] .folder-card:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,1), 0 8px 28px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+/* Folder icon badge */
+[data-pack="obsidian"] .folder-card-icon {
+  background:
+    linear-gradient(155deg, rgba(56,189,248,0.18) 0%, rgba(56,189,248,0.06) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 0 12px rgba(56,189,248,0.15);
+}
+
+/* ===== BUTTONS ===== */
+[data-pack="obsidian"] .btn-primary {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  color: #050507;
+  font-weight: 700;
+  border: none;
+  letter-spacing: -0.01em;
+  box-shadow: 0 4px 20px rgba(56,189,248,0.30), inset 0 1px 0 rgba(255,255,255,0.30);
+}
+[data-pack="obsidian"] .btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(56,189,248,0.45), inset 0 1px 0 rgba(255,255,255,0.35);
+  transform: translateY(-1px);
+}
+[data-pack="obsidian"] .btn-secondary {
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #c0c0d0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+[data-pack="obsidian"] .btn-secondary:hover {
+  border-color: rgba(56,189,248,0.25);
+  color: #38bdf8;
+}
+
+/* ===== INPUTS ===== */
+[data-pack="obsidian"] input,
+[data-pack="obsidian"] textarea,
+[data-pack="obsidian"] select {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), inset 0 -1px 0 rgba(255,255,255,0.04) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em !important;
+}
+[data-pack="obsidian"] input:focus,
+[data-pack="obsidian"] textarea:focus {
+  border-color: rgba(56,189,248,0.35) !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.25), 0 0 0 3px rgba(56,189,248,0.10) !important;
+  outline: none !important;
+}
+
+/* ===== TOGGLE GROUP ===== */
+[data-pack="obsidian"] .toggle-group {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+[data-pack="obsidian"] .toggle-opt.active {
+  background: linear-gradient(155deg, rgba(56,189,248,0.22) 0%, rgba(56,189,248,0.10) 100%);
+  color: #38bdf8;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 0 12px rgba(56,189,248,0.15);
+}
+
+/* ===== SWITCH ===== */
+[data-pack="obsidian"] .switch .slider {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+[data-pack="obsidian"] .switch input:checked + .slider {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  box-shadow: 0 0 14px rgba(56,189,248,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+/* ===== MODALS ===== */
+[data-pack="obsidian"] .modal-overlay { background: rgba(2,2,4,0.82); backdrop-filter: blur(6px); }
+[data-pack="obsidian"] .modal {
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 40%, rgba(0,0,0,0) 100%),
+    #0e0e12;
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 16px 60px rgba(0,0,0,0.80), 0 0 0 1px rgba(56,189,248,0.06);
+}
+
+/* ===== SETTINGS PANEL ===== */
+[data-pack="obsidian"] .settings-panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 30%),
+    #070709;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  box-shadow: -12px 0 50px rgba(0,0,0,0.7), inset 1px 0 0 rgba(255,255,255,0.04);
+}
+[data-pack="obsidian"][data-theme="light"] .settings-panel {
+  background: #f0f1f5;
+  border-left: 1px solid rgba(0,0,0,0.08);
+}
+[data-pack="obsidian"] .settings-section-title {
+  color: #38bdf8;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+}
+[data-pack="obsidian"] .settings-action-btn {
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+[data-pack="obsidian"] .settings-action-btn:hover {
+  border-color: rgba(56,189,248,0.22);
+  color: #38bdf8;
+}
+
+/* ===== COMMAND PALETTE ===== */
+[data-pack="obsidian"] #cmdPaletteOverlay { background: rgba(2,2,4,0.85); backdrop-filter: blur(8px); }
+[data-pack="obsidian"] #cmdPalette {
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.01) 40%, rgba(0,0,0,0) 100%),
+    #0c0c10;
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    0 16px 70px rgba(0,0,0,0.90),
+    0 0 0 1px rgba(56,189,248,0.05);
+}
+[data-pack="obsidian"] .cmd-input {
+  caret-color: #38bdf8;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+[data-pack="obsidian"] .cmd-search-icon { color: #38bdf8; }
+[data-pack="obsidian"] .cmd-search-row {
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 1px 0 rgba(56,189,248,0.05);
+}
+
+/* ===== SCROLLBAR ===== */
+[data-pack="obsidian"] ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+[data-pack="obsidian"] ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.10);
+  border-radius: 99px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+[data-pack="obsidian"] ::-webkit-scrollbar-thumb:hover { background: rgba(56,189,248,0.25); }
+
+/* ===== TAGS / CHIPS ===== */
+[data-pack="obsidian"] .tag-chip {
+  background: rgba(56,189,248,0.09);
+  color: #38bdf8;
+  border: 1px solid rgba(56,189,248,0.16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* ===== PACK PICKER ===== */
+[data-pack="obsidian"] .pack-card {
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+[data-pack="obsidian"] .pack-card:hover {
+  border-color: rgba(255,255,255,0.15);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.3);
+}
+[data-pack="obsidian"] .pack-card.active {
+  border-color: rgba(56,189,248,0.40);
+  background:
+    linear-gradient(155deg, rgba(56,189,248,0.14) 0%, rgba(56,189,248,0.04) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 0 0 2px rgba(56,189,248,0.14);
+  color: #38bdf8;
+}
+
+/* ===== HERO greeting ===== */
+[data-pack="obsidian"] .greet-text {
+  background: linear-gradient(120deg, #f0f0f8 0%, #c8d8f0 40%, #38bdf8 80%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 24px rgba(56,189,248,0.25));
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+[data-pack="obsidian"][data-theme="light"] .greet-text {
+  background: linear-gradient(120deg, #0a0a14 0%, #0284c7 60%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: none;
+}
+
+/* ===== FAB ===== */
+[data-pack="obsidian"] .fab-main,
+[data-pack="obsidian"] .fab-btn {
+  background: linear-gradient(135deg, #38bdf8, #818cf8) !important;
+  border: none !important;
+  box-shadow: 0 6px 24px rgba(56,189,248,0.40), inset 0 1px 0 rgba(255,255,255,0.25) !important;
+  color: #050507 !important;
+}
+[data-pack="obsidian"] .fab-main:hover {
+  box-shadow: 0 8px 32px rgba(56,189,248,0.55), inset 0 1px 0 rgba(255,255,255,0.30) !important;
+  transform: translateY(-2px) scale(1.04);
+}

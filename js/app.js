@@ -1,6 +1,6 @@
 ﻿'use strict';
 // =============================================
-//  FIREFLY TAB — app.js v2 (All bugs fixed)
+//  TABDECK — app.js  (production-ready)
 // =============================================
 
 // ===== CHROME API WRAPPER =====
@@ -331,7 +331,7 @@ const FALLBACK_QUOTES = [
 
 // ===== STATE =====
 let S = {
-  user:          { name:'Ahsan', avatarColor:'#7c3aed', googlePicture:null, googleName:null },
+  user:          { name:'User', avatarColor:'#7c3aed', googlePicture:null, googleName:null },
   workspaces:    [],
   activeWsId:    1,
   wsData:        {},   // {[wsId]: {quickAccess,notes,tasks}}
@@ -346,6 +346,7 @@ let S = {
     widgets:     { notes:true, tasks:true, quote:true, timer:true },
     gridView:         false,
     sidebarCollapsed: false,
+    wallpaper: { enabled: false, interval: 5, dim: 0.45 },
   },
   allBookmarks:  [],   // parsed flat array of folders
   timer: { total:1500, remaining:1500, running:false, interval:null },
@@ -434,6 +435,7 @@ async function loadState() {
   applyAccent(S.settings.accentColor);
   applyTheme(S.settings.theme);
   applyCardGlow(S.settings.cardGlow || 'glow');
+  initWallpaper();
   document.body.classList.toggle('grid-view-mode', !!S.settings.gridView);
   el('gridViewBtn')?.classList.toggle('active', !!S.settings.gridView);
   document.body.classList.toggle('sidebar-collapsed', !!S.settings.sidebarCollapsed);
@@ -808,8 +810,9 @@ function weatherEmoji(c) {
   if (c===116) return '⛅';
   if (c===119||c===122) return '☁️';
   if (c>=386&&c<=395) return '⛈️';  // thundery (must check before rain)
-  if (c>=323&&c<=377) return '❄️';  // snow/sleet (correct wttr.in range, before rain)
-  if (c>=176&&c<=321) return '🌧️'; // rain/drizzle
+  if (c===227||c===230) return '❄️'; // blowing snow / blizzard (below rain range, must be explicit)
+  if (c>=323&&c<=377) return '❄️';  // snow/sleet/ice pellets
+  if (c>=176&&c<=321) return '🌧️'; // rain/drizzle/fog
   return '🌤️';
 }
 
@@ -822,7 +825,7 @@ async function checkGoogleIdentity() {
     // Try to get Google profile picture
     fetchGoogleProfilePicture();
     // Update name from email only if no real name has been set yet
-    if (!S.user.name || S.user.name === 'Ahsan' || (!S.user.googleName && !S.user.name)) {
+    if (!S.user.name || S.user.name === 'User' || (!S.user.googleName && !S.user.name)) {
       const nameParts = (info.email.split('@')[0] || 'User').replace(/[._]/g,' ');
       S.user.name = nameParts.charAt(0).toUpperCase() + nameParts.slice(1);
       updateGreeting();
@@ -3614,6 +3617,16 @@ function openSettings() {
   });
   el('settingsPanel').classList.add('open');
   el('settingsOverlay').classList.add('open');
+  // Wallpaper
+  const wp = S.settings.wallpaper || {};
+  el('wallpaperToggle').checked = !!wp.enabled;
+  el('wallpaperOptions').style.display = wp.enabled ? '' : 'none';
+  document.querySelectorAll('#wallpaperIntervalGroup .toggle-opt').forEach(b => {
+    b.classList.toggle('active', +b.dataset.interval === +(wp.interval || 5));
+  });
+  document.querySelectorAll('#wallpaperDimGroup .toggle-opt').forEach(b => {
+    b.classList.toggle('active', +b.dataset.dim === +(wp.dim ?? 0.45));
+  });
 }
 function closeSettings() {
   el('settingsPanel').classList.remove('open');
@@ -3630,6 +3643,14 @@ function saveSettings() {
   const glowBtn = document.querySelector('#cardGlowGroup .toggle-opt.active');
   S.settings.cardGlow = glowBtn?.dataset.glow || 'glow';
   applyCardGlow(S.settings.cardGlow);
+  // Wallpaper
+  S.settings.wallpaper = S.settings.wallpaper || {};
+  S.settings.wallpaper.enabled = el('wallpaperToggle').checked;
+  const wpIntBtn = document.querySelector('#wallpaperIntervalGroup .toggle-opt.active');
+  S.settings.wallpaper.interval = wpIntBtn ? +wpIntBtn.dataset.interval : 5;
+  const wpDimBtn = document.querySelector('#wallpaperDimGroup .toggle-opt.active');
+  S.settings.wallpaper.dim = wpDimBtn ? +wpDimBtn.dataset.dim : 0.45;
+  initWallpaper();
   updateAvatarDisplay();
   updateGreeting();
   applyWidgetVisibility();
@@ -3661,7 +3682,9 @@ function applyAccent(color) {
   try { localStorage.setItem('__td_accent', color); } catch(e) {}
 }
 function applyPack(pack) {
-  if (pack !== 'brutal' && pack !== 'atelier' && pack !== 'holodeck' && pack !== 'mono') pack = 'default';
+  if (pack !== 'brutal' && pack !== 'atelier' && pack !== 'holodeck' && pack !== 'mono'
+      && pack !== 'aurora' && pack !== 'ember' && pack !== 'sakura'
+      && pack !== 'obsidian' && pack !== 'aura') pack = 'default';
   S.settings.pack = pack;
   document.documentElement.dataset.pack = pack;
   const link = document.getElementById('theme-pack-css');
@@ -3703,6 +3726,90 @@ function applyPack(pack) {
 function applyCardGlow(mode) {
   document.documentElement.dataset.cardGlow = mode || 'glow';
 }
+
+// ===== WALLPAPER SLIDESHOW =====
+// Curated pool of high-quality Picsum photo IDs
+const WP_IDS = [
+  10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 27, 28, 29, 31, 32, 36,
+  39, 40, 42, 43, 44, 45, 48, 50, 52, 56, 57, 60, 64, 65, 66, 67, 72, 73,
+  74, 75, 76, 78, 80, 83, 85, 86, 87, 90, 91, 96, 100, 101, 103, 106, 107,
+  110, 112, 113, 114, 119, 120, 122, 124, 125, 126, 128, 130, 132, 136, 137,
+  139, 140, 141, 142, 145, 146, 147, 149, 150, 152, 155, 157, 160, 163, 164,
+  166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180
+];
+let _wpTimer      = null;
+let _wpActiveLayer = 1;
+let _wpIdxPointer  = 0;
+
+function _wpNextUrl() {
+  const id = WP_IDS[_wpIdxPointer % WP_IDS.length];
+  _wpIdxPointer++;
+  return `https://picsum.photos/id/${id}/1920/1080`;
+}
+
+let _wpRetries = 0;
+const _WP_MAX_RETRIES = 5;
+
+function _wpLoadNext() {
+  const url = _wpNextUrl();
+  const nextLayerNum = _wpActiveLayer === 1 ? 2 : 1;
+  const nextEl       = document.getElementById('bgLayer' + nextLayerNum);
+  const currentEl    = document.getElementById('bgLayer' + _wpActiveLayer);
+  if (!nextEl || !currentEl) return;
+
+  const img = new Image();
+  img.onload = () => {
+    _wpRetries = 0; // reset on success
+    nextEl.style.backgroundImage = `url("${url}")`;
+    // Let browser paint the new background before fading in
+    requestAnimationFrame(() => {
+      nextEl.style.opacity = '1';
+      // Start fading out the old layer slightly after new one starts appearing
+      setTimeout(() => {
+        currentEl.style.opacity = '0';
+        _wpActiveLayer = nextLayerNum;
+      }, 300);
+    });
+  };
+  img.onerror = () => {
+    _wpIdxPointer++;
+    if (++_wpRetries < _WP_MAX_RETRIES) _wpLoadNext(); // skip bad IDs, give up after 5
+    else _wpRetries = 0; // exhausted retries, wait for next scheduled rotation
+  };
+  img.src = url;
+}
+
+function initWallpaper() {
+  if (_wpTimer) { clearInterval(_wpTimer); _wpTimer = null; }
+  const wp = S.settings.wallpaper || {};
+
+  if (!wp.enabled) {
+    document.body.classList.remove('has-wallpaper');
+    // Reset layers so they don't flash on re-enable
+    ['bgLayer1','bgLayer2'].forEach(id => {
+      const el2 = document.getElementById(id);
+      if (el2) el2.style.opacity = '0';
+    });
+    _wpActiveLayer = 1;
+    return;
+  }
+
+  document.body.classList.add('has-wallpaper');
+
+  // Apply dim overlay
+  const dimEl = document.getElementById('bgDim');
+  if (dimEl) dimEl.style.background = `rgba(0,0,0,${wp.dim ?? 0.45})`;
+
+  // Shuffle starting position so every session starts with a different image
+  _wpIdxPointer = Math.floor(Math.random() * WP_IDS.length);
+
+  // Load first image immediately
+  _wpLoadNext();
+
+  // Schedule rotations
+  const ms = (wp.interval || 5) * 60 * 1000;
+  _wpTimer = setInterval(_wpLoadNext, ms);
+}
 function applyWidgetVisibility() {
   const w = S.settings.widgets;
   const show = (id, visible) => {
@@ -3741,6 +3848,7 @@ function importData(file) {
       renderAll();
       applyTheme(S.settings.theme);
       applyAccent(S.settings.accentColor);
+      initWallpaper();
       showToast('Data imported successfully!', 'success');
     } catch {
       showToast('Invalid file format', 'error');
@@ -4140,6 +4248,26 @@ function setupEventListeners() {
   el('settingsOverlay').addEventListener('click', closeSettings);
   el('saveSettingsBtn').addEventListener('click', saveSettings);
 
+  // Wallpaper controls
+  el('wallpaperToggle').addEventListener('change', () => {
+    el('wallpaperOptions').style.display = el('wallpaperToggle').checked ? '' : 'none';
+  });
+  document.querySelectorAll('#wallpaperIntervalGroup .toggle-opt').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#wallpaperIntervalGroup .toggle-opt').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+  document.querySelectorAll('#wallpaperDimGroup .toggle-opt').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#wallpaperDimGroup .toggle-opt').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+  el('wallpaperNextBtn').addEventListener('click', () => {
+    if (S.settings.wallpaper?.enabled) _wpLoadNext();
+  });
+
   // Theme pack picker
   document.querySelectorAll('#packPicker .pack-card').forEach(b => {
     b.addEventListener('click', () => {
@@ -4270,13 +4398,14 @@ function setupEventListeners() {
       S.weatherLocation = null;
       S.workspaces.forEach(ws => S.wsData[ws.id] = DEFAULT_WS_DATA(ws.id));
       S.trash = [];
-      S.settings = { pack:'default', theme:'dark', accentColor:'#7c3aed', clockFormat:'12', showSeconds:true, cardGlow:'glow', widgets:{notes:true,tasks:true,quote:true,timer:true} };
+      S.settings = { pack:'default', theme:'dark', accentColor:'#7c3aed', clockFormat:'12', showSeconds:true, cardGlow:'glow', widgets:{notes:true,tasks:true,quote:true,timer:true}, wallpaper:{ enabled:false, interval:5, dim:0.45 } };
       save();
       renderAll();
       applyPack('default');
       applyTheme('dark');
       applyAccent('#7c3aed');
       applyCardGlow('glow');
+      initWallpaper();
       showToast('All data cleared', 'success');
     });
   });
