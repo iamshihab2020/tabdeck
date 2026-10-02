@@ -1,0 +1,543 @@
+/* TabDeck — AURA theme pack
+   Iridescent gloss: deep void dark, holographic color shimmer,
+   glossy panels that shift from violet to rose to sky.
+   Every surface catches a different color of light.
+   Syne body · ultra-wide tracking on labels. */
+
+@import url('default.css');
+
+/* ===== Variables — "Void" (dark default) ===== */
+:root,
+[data-pack="aura"]:root,
+[data-pack="aura"] {
+  --bg-body:        #080612;
+  --bg-sidebar:     #07050f;
+  --bg-modal:       #100c1e;
+  --bg-card:        rgba(168,85,247,0.05);
+  --bg-card-hover:  rgba(168,85,247,0.09);
+  --bg-input:       rgba(168,85,247,0.06);
+  --accent:         #a855f7;
+  --accent-light:   #c084fc;
+  --accent-bg:      rgba(168,85,247,0.14);
+  --accent-subtle:  rgba(168,85,247,0.06);
+  --accent-glow:    rgba(168,85,247,0.55);
+  --green:          #34d399;
+  --orange:         #fb923c;
+  --red:            #f87171;
+  --text-primary:   #f0ecff;
+  --text-secondary: #9080c0;
+  --text-muted:     #40305a;
+  --border:         rgba(168,85,247,0.12);
+  --border-hover:   rgba(168,85,247,0.30);
+  --radius:         18px;
+  --radius-sm:      11px;
+  --shadow:         0 8px 40px rgba(0,0,0,0.70), 0 1px 0 rgba(255,255,255,0.05) inset;
+  --transition:     0.22s cubic-bezier(.4,0,.2,1);
+  /* Iridescent color stops */
+  --ird-a:  rgba(168,85,247,0.55);   /* violet */
+  --ird-b:  rgba(236,72,153,0.45);   /* rose */
+  --ird-c:  rgba(56,189,248,0.40);   /* sky */
+  --ird-d:  rgba(52,211,153,0.30);   /* emerald */
+}
+
+/* ===== Variables — "Bloom" (light alt) ===== */
+[data-pack="aura"][data-theme="light"],
+[data-pack="aura"][data-theme="light"]:root,
+html[data-pack="aura"][data-theme="light"] {
+  --bg-body:        #faf7ff;
+  --bg-sidebar:     #f3edff;
+  --bg-modal:       #ffffff;
+  --bg-card:        rgba(255,255,255,0.88);
+  --bg-card-hover:  rgba(255,255,255,1);
+  --bg-input:       rgba(0,0,0,0.04);
+  --accent:         #9333ea;
+  --accent-light:   #a855f7;
+  --accent-bg:      rgba(147,51,234,0.10);
+  --accent-subtle:  rgba(147,51,234,0.05);
+  --accent-glow:    rgba(147,51,234,0.25);
+  --text-primary:   #130b22;
+  --text-secondary: #6b3fa0;
+  --text-muted:     #b090d0;
+  --border:         rgba(147,51,234,0.14);
+  --border-hover:   rgba(147,51,234,0.32);
+  --shadow:         0 4px 24px rgba(147,51,234,0.10), 0 1px 0 rgba(255,255,255,0.90) inset;
+}
+
+/* ===== Typography + body ===== */
+[data-pack="aura"] body {
+  font-family: 'Syne', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  background:
+    radial-gradient(ellipse 100% 55% at 30% -10%,  rgba(168,85,247,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 70%  45% at 80%  110%, rgba(236,72,153,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 50%  35% at 90%   20%, rgba(56,189,248,0.06) 0%, transparent 50%),
+    var(--bg-body);
+}
+[data-pack="aura"][data-theme="light"] body {
+  background:
+    radial-gradient(ellipse 80% 50% at 40% -10%, rgba(168,85,247,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 90% 100%, rgba(236,72,153,0.07) 0%, transparent 50%),
+    var(--bg-body);
+}
+
+/* ===== SIDEBAR ===== */
+[data-pack="aura"] .sidebar {
+  background:
+    linear-gradient(180deg, rgba(168,85,247,0.04) 0%, rgba(168,85,247,0) 50%),
+    #07050f;
+  border-right: 1px solid rgba(168,85,247,0.10);
+  box-shadow: 1px 0 0 rgba(236,72,153,0.05);
+}
+[data-pack="aura"][data-theme="light"] .sidebar {
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+}
+[data-pack="aura"] .logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  border-bottom: 1px solid rgba(168,85,247,0.10);
+}
+[data-pack="aura"] .logo-icon {
+  filter: drop-shadow(0 0 12px rgba(168,85,247,1));
+  color: #c084fc;
+}
+[data-pack="aura"] .nav-item {
+  font-family: 'Syne', sans-serif;
+  font-weight: 500;
+  border-left: 2px solid transparent;
+  letter-spacing: 0;
+}
+[data-pack="aura"] .nav-item:hover {
+  background: rgba(168,85,247,0.07);
+  border-left-color: rgba(168,85,247,0.40);
+  color: #e0d0ff;
+}
+[data-pack="aura"] .nav-item.active {
+  background: linear-gradient(90deg, rgba(168,85,247,0.16), rgba(236,72,153,0.06), rgba(168,85,247,0.02));
+  border-left: 2px solid #a855f7;
+  color: #c084fc;
+  box-shadow: inset 0 0 24px rgba(168,85,247,0.06);
+}
+[data-pack="aura"] .workspace-sidebar-item.active {
+  background: rgba(168,85,247,0.12);
+  color: #c084fc;
+  border-left: 2px solid #a855f7;
+}
+[data-pack="aura"] .section-header {
+  color: #a855f7;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+[data-pack="aura"] .icon-btn {
+  background: rgba(168,85,247,0.07);
+  border: 1px solid rgba(168,85,247,0.14);
+  color: #9080c0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+[data-pack="aura"] .icon-btn:hover {
+  background: rgba(168,85,247,0.16);
+  color: #c084fc;
+  border-color: rgba(168,85,247,0.25);
+}
+[data-pack="aura"] .sidebar-folder-count {
+  background: rgba(168,85,247,0.12);
+  color: #c084fc;
+  font-weight: 700;
+}
+[data-pack="aura"] .sidebar-footer {
+  background:
+    linear-gradient(0deg, rgba(168,85,247,0.04) 0%, transparent 100%),
+    rgba(6,4,12,0.95);
+  border-top: 1px solid rgba(168,85,247,0.09);
+}
+[data-pack="aura"] .footer-btn {
+  background: rgba(168,85,247,0.06);
+  border: 1px solid rgba(168,85,247,0.10);
+  color: #9080c0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+[data-pack="aura"] .footer-btn:hover {
+  background: rgba(168,85,247,0.14);
+  color: #c084fc;
+  border-color: rgba(168,85,247,0.22);
+}
+
+/* Sync card */
+[data-pack="aura"] .sync-card {
+  background:
+    linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(236,72,153,0.08) 100%);
+  border: 1px solid rgba(168,85,247,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+[data-pack="aura"] .sync-icon {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  color: white;
+  box-shadow: 0 4px 14px rgba(168,85,247,0.40);
+}
+[data-pack="aura"] .sign-in-btn {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #38bdf8 100%);
+  color: white;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 20px rgba(168,85,247,0.40), inset 0 1px 0 rgba(255,255,255,0.22);
+  letter-spacing: 0.01em;
+}
+[data-pack="aura"] .sign-in-btn:hover {
+  box-shadow: 0 6px 28px rgba(168,85,247,0.55), inset 0 1px 0 rgba(255,255,255,0.28);
+  transform: translateY(-1px);
+}
+[data-pack="aura"] .sign-in-btn.signed-in {
+  background: rgba(168,85,247,0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168,85,247,0.25);
+  box-shadow: none;
+}
+
+/* ===== TOPBAR — iridescent frosted bar ===== */
+[data-pack="aura"] .topbar {
+  background:
+    linear-gradient(90deg,
+      rgba(168,85,247,0.06) 0%,
+      rgba(236,72,153,0.04) 50%,
+      rgba(56,189,248,0.04) 100%
+    ),
+    rgba(7,5,14,0.90);
+  border-bottom: 1px solid rgba(168,85,247,0.10);
+  box-shadow:
+    0 1px 0 rgba(236,72,153,0.06),
+    0 4px 20px rgba(0,0,0,0.45);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+[data-pack="aura"][data-theme="light"] .topbar {
+  background:
+    linear-gradient(90deg, rgba(168,85,247,0.06) 0%, rgba(236,72,153,0.04) 100%),
+    rgba(250,247,255,0.92);
+  border-bottom: 1px solid rgba(168,85,247,0.12);
+  backdrop-filter: blur(12px);
+}
+[data-pack="aura"] .search-trigger {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.09) 0%, rgba(236,72,153,0.04) 50%, rgba(56,189,248,0.03) 100%);
+  border: 1px solid rgba(168,85,247,0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+[data-pack="aura"] .search-trigger:hover {
+  border-color: rgba(168,85,247,0.30);
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.14) 0%, rgba(236,72,153,0.07) 50%, rgba(56,189,248,0.05) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 0 18px rgba(168,85,247,0.10);
+}
+[data-pack="aura"] .topbar-btn {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.08) 0%, rgba(236,72,153,0.04) 100%);
+  border: 1px solid rgba(168,85,247,0.12);
+  color: #9080c0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-pack="aura"] .topbar-btn:hover {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.16) 0%, rgba(236,72,153,0.08) 100%);
+  color: #c084fc;
+  border-color: rgba(168,85,247,0.24);
+}
+[data-pack="aura"] .topbar-btn.active {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.22) 0%, rgba(236,72,153,0.10) 100%);
+  color: #c084fc;
+  border-color: rgba(168,85,247,0.32);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 16px rgba(168,85,247,0.16);
+}
+[data-pack="aura"] .avatar {
+  background: linear-gradient(135deg, #a855f7, #ec4899, #38bdf8);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 2px 12px rgba(168,85,247,0.40);
+}
+
+/* ===== CARDS — iridescent gloss ===== */
+/* Each card has a diagonal gloss that picks up all three hues */
+[data-pack="aura"] .widget,
+[data-pack="aura"] .folder-card,
+[data-pack="aura"] .qa-item {
+  background:
+    linear-gradient(
+      155deg,
+      rgba(168,85,247,0.12) 0%,
+      rgba(236,72,153,0.07) 30%,
+      rgba(56,189,248,0.04) 65%,
+      rgba(0,0,0,0.0)       100%
+    ),
+    rgba(12,8,22,0.72);
+  border: 1px solid rgba(168,85,247,0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    inset 1px 0 0 rgba(168,85,247,0.06),
+    0 1px 0 rgba(0,0,0,0.5),
+    0 8px 32px rgba(0,0,0,0.50);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+[data-pack="aura"] .widget:hover,
+[data-pack="aura"] .folder-card:hover {
+  border-color: rgba(168,85,247,0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    inset 1px 0 0 rgba(236,72,153,0.08),
+    0 12px 44px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(168,85,247,0.10),
+    0 0 24px rgba(168,85,247,0.06);
+  transform: translateY(-2px);
+}
+[data-pack="aura"] .qa-item:hover {
+  border-color: rgba(168,85,247,0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    0 8px 28px rgba(0,0,0,0.50),
+    0 0 0 1px rgba(168,85,247,0.08);
+}
+[data-pack="aura"][data-theme="light"] .widget,
+[data-pack="aura"][data-theme="light"] .folder-card,
+[data-pack="aura"][data-theme="light"] .qa-item {
+  background:
+    linear-gradient(155deg,
+      rgba(168,85,247,0.08) 0%,
+      rgba(236,72,153,0.04) 30%,
+      rgba(255,255,255,0.80) 70%
+    );
+  border: 1px solid rgba(168,85,247,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.90), 0 4px 20px rgba(168,85,247,0.08);
+  backdrop-filter: blur(10px);
+}
+[data-pack="aura"][data-theme="light"] .widget:hover,
+[data-pack="aura"][data-theme="light"] .folder-card:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,1), 0 8px 30px rgba(168,85,247,0.12);
+  transform: translateY(-2px);
+}
+
+/* Folder icon badge */
+[data-pack="aura"] .folder-card-icon {
+  background:
+    linear-gradient(135deg, rgba(168,85,247,0.22) 0%, rgba(236,72,153,0.12) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 14px rgba(168,85,247,0.20);
+}
+
+/* ===== BUTTONS ===== */
+[data-pack="aura"] .btn-primary {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #38bdf8 100%);
+  color: white;
+  font-weight: 700;
+  border: none;
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 20px rgba(168,85,247,0.35), inset 0 1px 0 rgba(255,255,255,0.22);
+}
+[data-pack="aura"] .btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(168,85,247,0.50), inset 0 1px 0 rgba(255,255,255,0.28);
+  transform: translateY(-1px);
+}
+[data-pack="aura"] .btn-secondary {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.10) 0%, rgba(236,72,153,0.04) 100%);
+  border: 1px solid rgba(168,85,247,0.18);
+  color: #c084fc;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+[data-pack="aura"] .btn-secondary:hover {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.18) 0%, rgba(236,72,153,0.08) 100%);
+  border-color: rgba(168,85,247,0.32);
+}
+
+/* ===== INPUTS ===== */
+[data-pack="aura"] input,
+[data-pack="aura"] textarea,
+[data-pack="aura"] select {
+  background: rgba(168,85,247,0.05) !important;
+  border: 1px solid rgba(168,85,247,0.14) !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.25), inset 0 -1px 0 rgba(168,85,247,0.05) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Syne', sans-serif !important;
+  font-weight: 400 !important;
+}
+[data-pack="aura"] input:focus,
+[data-pack="aura"] textarea:focus {
+  border-color: rgba(168,85,247,0.40) !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.20), 0 0 0 3px rgba(168,85,247,0.12) !important;
+  outline: none !important;
+}
+
+/* ===== TOGGLE GROUP ===== */
+[data-pack="aura"] .toggle-group {
+  background: rgba(168,85,247,0.05);
+  border: 1px solid rgba(168,85,247,0.14);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.20);
+}
+[data-pack="aura"] .toggle-opt.active {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.24) 0%, rgba(236,72,153,0.12) 100%);
+  color: #c084fc;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 14px rgba(168,85,247,0.18);
+}
+
+/* ===== SWITCH ===== */
+[data-pack="aura"] .switch .slider {
+  background: rgba(168,85,247,0.10);
+  border: 1px solid rgba(168,85,247,0.16);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.25);
+}
+[data-pack="aura"] .switch input:checked + .slider {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  box-shadow: 0 0 16px rgba(168,85,247,0.40), inset 0 1px 0 rgba(255,255,255,0.20);
+}
+
+/* ===== MODALS ===== */
+[data-pack="aura"] .modal-overlay { background: rgba(3,1,8,0.84); backdrop-filter: blur(6px); }
+[data-pack="aura"] .modal {
+  background:
+    linear-gradient(155deg,
+      rgba(168,85,247,0.09) 0%,
+      rgba(236,72,153,0.05) 35%,
+      rgba(0,0,0,0) 70%
+    ),
+    #100c1e;
+  border: 1px solid rgba(168,85,247,0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    0 16px 60px rgba(0,0,0,0.82),
+    0 0 0 1px rgba(236,72,153,0.06);
+}
+
+/* ===== SETTINGS PANEL ===== */
+[data-pack="aura"] .settings-panel {
+  background:
+    linear-gradient(180deg, rgba(168,85,247,0.04) 0%, rgba(168,85,247,0) 30%),
+    #09060f;
+  border-left: 1px solid rgba(168,85,247,0.10);
+  box-shadow: -12px 0 50px rgba(0,0,0,0.72), inset 1px 0 0 rgba(168,85,247,0.05);
+}
+[data-pack="aura"][data-theme="light"] .settings-panel {
+  background: #faf7ff;
+  border-left: 1px solid rgba(168,85,247,0.14);
+}
+[data-pack="aura"] .settings-section-title {
+  background: linear-gradient(90deg, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  font-size: 10.5px;
+}
+[data-pack="aura"] .settings-action-btn {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.09) 0%, rgba(236,72,153,0.04) 100%);
+  border: 1px solid rgba(168,85,247,0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-pack="aura"] .settings-action-btn:hover {
+  border-color: rgba(168,85,247,0.28);
+  color: #c084fc;
+}
+
+/* ===== COMMAND PALETTE ===== */
+[data-pack="aura"] #cmdPaletteOverlay { background: rgba(3,1,8,0.86); backdrop-filter: blur(8px); }
+[data-pack="aura"] #cmdPalette {
+  background:
+    linear-gradient(155deg,
+      rgba(168,85,247,0.10) 0%,
+      rgba(236,72,153,0.05) 35%,
+      rgba(0,0,0,0) 70%
+    ),
+    #0d0a1a;
+  border: 1px solid rgba(168,85,247,0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    0 16px 70px rgba(0,0,0,0.90),
+    0 0 40px rgba(168,85,247,0.06);
+}
+[data-pack="aura"] .cmd-input {
+  caret-color: #a855f7;
+  font-family: 'Syne', sans-serif !important;
+  font-weight: 500;
+}
+[data-pack="aura"] .cmd-search-icon { color: #a855f7; }
+[data-pack="aura"] .cmd-search-row {
+  border-bottom: 1px solid rgba(168,85,247,0.10);
+  box-shadow: 0 1px 0 rgba(236,72,153,0.05);
+}
+
+/* ===== SCROLLBAR ===== */
+[data-pack="aura"] ::-webkit-scrollbar-track { background: rgba(168,85,247,0.03); }
+[data-pack="aura"] ::-webkit-scrollbar-thumb {
+  background:
+    linear-gradient(180deg, rgba(168,85,247,0.25), rgba(236,72,153,0.18));
+  border-radius: 99px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+[data-pack="aura"] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(168,85,247,0.45), rgba(236,72,153,0.35));
+}
+
+/* ===== TAGS / CHIPS ===== */
+[data-pack="aura"] .tag-chip {
+  background:
+    linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(236,72,153,0.08) 100%);
+  color: #c084fc;
+  border: 1px solid rgba(168,85,247,0.20);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+/* ===== PACK PICKER ===== */
+[data-pack="aura"] .pack-card {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.07) 0%, rgba(168,85,247,0.02) 100%);
+  border: 1px solid rgba(168,85,247,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-pack="aura"] .pack-card:hover {
+  border-color: rgba(168,85,247,0.24);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 4px 16px rgba(168,85,247,0.10);
+}
+[data-pack="aura"] .pack-card.active {
+  background:
+    linear-gradient(155deg, rgba(168,85,247,0.18) 0%, rgba(236,72,153,0.10) 100%);
+  border-color: rgba(168,85,247,0.40);
+  color: #c084fc;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 0 0 2px rgba(168,85,247,0.15);
+}
+
+/* ===== HERO greeting — iridescent gradient text ===== */
+[data-pack="aura"] .greet-text {
+  background: linear-gradient(120deg, #f0ecff 0%, #c084fc 25%, #ec4899 55%, #38bdf8 80%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 28px rgba(168,85,247,0.30));
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+[data-pack="aura"][data-theme="light"] .greet-text {
+  background: linear-gradient(120deg, #130b22 0%, #9333ea 40%, #ec4899 70%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: none;
+}
+
+/* ===== FAB ===== */
+[data-pack="aura"] .fab-main,
+[data-pack="aura"] .fab-btn {
+  background: linear-gradient(135deg, #a855f7, #ec4899, #38bdf8) !important;
+  border: none !important;
+  box-shadow: 0 6px 24px rgba(168,85,247,0.45), inset 0 1px 0 rgba(255,255,255,0.22) !important;
+  color: white !important;
+}
+[data-pack="aura"] .fab-main:hover {
+  box-shadow: 0 8px 32px rgba(168,85,247,0.60), inset 0 1px 0 rgba(255,255,255,0.28) !important;
+  transform: translateY(-2px) scale(1.04);
+}

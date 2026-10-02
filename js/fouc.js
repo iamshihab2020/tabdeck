@@ -1,6 +1,8 @@
 try {
   var p = localStorage.getItem('__td_pack') || 'default';
-  if (p !== 'brutal' && p !== 'atelier' && p !== 'holodeck' && p !== 'mono') p = 'default';
+  if (p !== 'brutal' && p !== 'atelier' && p !== 'holodeck' && p !== 'mono'
+      && p !== 'aurora' && p !== 'ember' && p !== 'sakura'
+      && p !== 'obsidian' && p !== 'aura') p = 'default';
   var t = localStorage.getItem('__td_theme');
   var a = localStorage.getItem('__td_accent');
   var r = document.documentElement;

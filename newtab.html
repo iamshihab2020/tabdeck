@@ -12,10 +12,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,50;1,9..144,300..600,50&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Onest:wght@200;300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="js/fouc.js"></script>
   <link id="theme-pack-css" rel="stylesheet" href="css/themes/default.css">
 </head>
 <body>
+
+<!-- ===== WALLPAPER SLIDESHOW ===== -->
+<div id="bgSlideshow">
+  <div class="bg-layer" id="bgLayer1"></div>
+  <div class="bg-layer" id="bgLayer2"></div>
+  <div id="bgDim"></div>
+</div>
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
@@ -500,6 +509,41 @@
               <span class="pack-desc">Sci-fi HUD · cyan grid · scanlines</span>
             </span>
           </button>
+          <button class="pack-card" data-pack="aurora">
+            <span class="pack-swatch pack-swatch-aurora"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Aurora</span>
+              <span class="pack-desc">Northern lights · green glow · glass</span>
+            </span>
+          </button>
+          <button class="pack-card" data-pack="ember">
+            <span class="pack-swatch pack-swatch-ember"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Ember</span>
+              <span class="pack-desc">Warm dark · amber fire · cozy</span>
+            </span>
+          </button>
+          <button class="pack-card" data-pack="sakura">
+            <span class="pack-swatch pack-swatch-sakura"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Sakura</span>
+              <span class="pack-desc">Cherry blossom · soft pink · spring</span>
+            </span>
+          </button>
+          <button class="pack-card" data-pack="obsidian">
+            <span class="pack-swatch pack-swatch-obsidian"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Obsidian</span>
+              <span class="pack-desc">Black glass · glossy sheen · electric</span>
+            </span>
+          </button>
+          <button class="pack-card" data-pack="aura">
+            <span class="pack-swatch pack-swatch-aura"></span>
+            <span class="pack-meta">
+              <span class="pack-name">Aura</span>
+              <span class="pack-desc">Iridescent · violet-rose-sky · shimmer</span>
+            </span>
+          </button>
         </div>
       </div>
     </div>
@@ -525,6 +569,42 @@
           <div class="color-swatch" data-color="#d97706" style="background:#d97706"></div>
           <div class="color-swatch" data-color="#dc2626" style="background:#dc2626"></div>
           <div class="color-swatch" data-color="#db2777" style="background:#db2777"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Background Wallpaper</div>
+      <div class="settings-row">
+        <div class="settings-label">
+          <span>Enable Slideshow</span>
+          <span class="settings-sub-label" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px">Rotates beautiful photos automatically</span>
+        </div>
+        <label class="switch"><input type="checkbox" id="wallpaperToggle"><span class="slider"></span></label>
+      </div>
+      <div id="wallpaperOptions" style="display:none">
+        <div class="settings-row">
+          <div class="settings-label"><span>Switch Every</span></div>
+          <div class="toggle-group" id="wallpaperIntervalGroup">
+            <button class="toggle-opt active" data-interval="5">5 min</button>
+            <button class="toggle-opt" data-interval="10">10 min</button>
+            <button class="toggle-opt" data-interval="30">30 min</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label"><span>Overlay Dim</span></div>
+          <div class="toggle-group" id="wallpaperDimGroup">
+            <button class="toggle-opt" data-dim="0.2">Light</button>
+            <button class="toggle-opt active" data-dim="0.45">Medium</button>
+            <button class="toggle-opt" data-dim="0.65">Dark</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">
+            <span>Skip Image</span>
+            <span class="settings-sub-label" style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:1px">Load the next photo now</span>
+          </div>
+          <button class="settings-action-btn" id="wallpaperNextBtn" style="width:auto;padding:6px 14px">↺ Next Photo</button>
         </div>
       </div>
     </div>

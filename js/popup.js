@@ -190,7 +190,7 @@ function init() {
     wsCombo.setItems(workspaces.map(ws => ({
       value: String(ws.id),
       label: ws.name,
-      emoji: ws.emoji || '',
+      emoji: ws.icon || '',
     })));
   }).catch(err => {
     console.warn('TabDeck popup load error:', err);
